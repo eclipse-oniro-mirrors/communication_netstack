@@ -16,7 +16,6 @@
 #include "http_cache_request.h"
 
 #include "casche_constant.h"
-#include <charconv>
 #include "netstack_common_utils.h"
 
 namespace OHOS::NetStack::Http {
@@ -96,8 +95,7 @@ time_t HttpCacheRequest::GetMaxAgeSeconds() const
     }
 
     time_t val = 0;
-    auto [ptr, ec] = std::from_chars(maxAge_.c_str(), maxAge_.c_str() + maxAge_.size(), val, DECIMAL);
-    if (ec != std::errc{} || ptr != maxAge_.c_str() + maxAge_.size() || val < 0) {
+    if (!CommonUtils::ParseDecimalInteger(maxAge_, val) || val < 0) {
         return INVALID_TIME;
     }
     return val;
@@ -110,8 +108,7 @@ time_t HttpCacheRequest::GetMaxStaleSeconds() const
     }
 
     time_t val = 0;
-    auto [ptr, ec] = std::from_chars(maxStale_.c_str(), maxStale_.c_str() + maxStale_.size(), val, DECIMAL);
-    if (ec != std::errc{} || ptr != maxStale_.c_str() + maxStale_.size() || val < 0) {
+    if (!CommonUtils::ParseDecimalInteger(maxStale_, val) || val < 0) {
         return INVALID_TIME;
     }
     return val;
@@ -123,8 +120,7 @@ time_t HttpCacheRequest::GetMinFreshSeconds() const
         return INVALID_TIME;
     }
     time_t val = 0;
-    auto [ptr, ec] = std::from_chars(minFresh_.c_str(), minFresh_.c_str() + minFresh_.size(), val, DECIMAL);
-    if (ec != std::errc{} || ptr != minFresh_.c_str() + minFresh_.size() || val < 0) {
+    if (!CommonUtils::ParseDecimalInteger(minFresh_, val) || val < 0) {
         return INVALID_TIME;
     }
     return val;

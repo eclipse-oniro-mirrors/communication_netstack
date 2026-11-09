@@ -33,14 +33,15 @@ void DeepCopyBuffer(Http_Buffer *dst, const Http_Buffer *src)
         return;
     }
     // LCOV_EXCL_START
-    dst->buffer = static_cast<char *>(malloc(src->length + 1));
+    size_t allocLen = static_cast<size_t>(src->length) + 1;
+    dst->buffer = static_cast<char *>(malloc(allocLen));
     if (dst->buffer == nullptr) {
         dst->length = 0;
         return;
     }
     dst->length = src->length;
     dst->buffer[dst->length] = '\0';
-    if (memcpy_s(dst->buffer, dst->length, src->buffer, src->length) != EOK) {
+    if (memcpy_s(dst->buffer, allocLen, src->buffer, src->length) != EOK) {
         dst->length = 0;
         free(dst->buffer);
         dst->buffer = nullptr;

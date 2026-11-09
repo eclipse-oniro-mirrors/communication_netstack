@@ -197,7 +197,16 @@ public:
     static void ProcessResponseHeadersAndEmitEvents(RequestContext *context);
 
 private:
+    using CurlLongOptionSetter = std::function<CURLcode(CURL *, CURLoption, long)>;
+
+    static bool SetLowSpeedOption(CURL *curl, RequestContext *context);
+
     static bool SetOption(CURL *curl, RequestContext *context, struct curl_slist *requestHeader);
+
+    static bool SetConnectionPolicyOptions(CURL *curl, RequestContext *context);
+
+    static bool SetConnectionPolicyOptions(CURL *curl, RequestContext *context,
+        const CurlLongOptionSetter &setOption);
 
     static bool SetProxyOption(CURL *curl, RequestContext *context);
 
@@ -216,6 +225,8 @@ private:
     static bool SetSSLCertOption(CURL *curl, RequestContext *context);
 
     static bool SetServerSSLCertOption(CURL *curl, OHOS::NetStack::Http::RequestContext *context);
+
+    static long GetSslVerifyHostValue(const HttpRequestOptions &options);
 
     static bool SetDnsOption(CURL *curl, RequestContext *context);
 
@@ -326,6 +337,13 @@ private:
     static CURLcode SslCtxFunction(void *curl, void *ssl_ctx, void *parm);
     static CURLcode MultiPathSslCtxFunction(CURL *curl, void *ssl_ctx, void *request_context);
     static CURLcode VerifyRootCaSslCtxFunction(CURL *curl, void *ssl_ctx, void *context);
+#ifdef HTTP_MULTIPATH_CERT_ENABLE
+    static void InstallMultiCandidateCertVerifyCallback(void *sslCtx, RequestContext *requestContext);
+#endif
+#if defined(HTTP_MULTIPATH_CERT_ENABLE) && defined(HTTP_ONLY_VERIFY_ROOT_CA_ENABLE)
+    static int HttpMultiCandidateCertVerifyCallback(X509_STORE_CTX *ctx, void *arg);
+    static bool VerifyPinnedPubkeyForChain(STACK_OF(X509) *chain, const std::string &pinnedPubkey);
+#endif
 
     static bool SetDnsCacheOption(CURL *curl, RequestContext *context);
 

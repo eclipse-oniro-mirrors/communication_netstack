@@ -28,25 +28,52 @@ common_external_deps = [
   "hilog:libhilog",
   "libwebsockets:websockets",
   "napi:ace_napi",
+  "openssl:libssl_shared",
+]
+
+# Compile the innerapi sources directly into the test binary (the same way the tls test
+# targets do), so the suite does not depend on the device system image's
+# libwebsocket_native.z.so version: DT does not push shared libs to the device.
+websocket_native_sources = [
+  "$WEBSOCKET_INNERAPI/src/websocket_client.cpp",
+  "$WEBSOCKET_INNERAPI/src/websocket_server.cpp",
+  "$NETSTACK_NATIVE_ROOT/net_ssl/cert_chain_verify_helper.cpp",
 ]
 
 ohos_unittest("websocket_inner_unittest") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   module_out_path = "netstack/netstack/websocket_inner_unittest"
 
   include_dirs = [
     "$NETSTACK_DIR/utils/napi_utils/include",
     "$WEBSOCKET_INNERAPI/include",
+    "$NETSTACK_INNERKITS_DIR/websocket_native/include",
+    "$NETSTACK_DIR/interfaces/innerkits/net_ssl/include",
   ]
   include_dirs += utils_include
 
-  sources = [ "websocket_inner_unittest.cpp" ]
+  sources = [ "websocket_inner_unittest.cpp" ] + websocket_native_sources
+
+  defines = [ "OHOS_LIBWEBSOCKETS=1" ]
 
   deps = [
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
-    "$NETSTACK_INNERKITS_DIR/websocket_native:websocket_native",
+    "$NETSTACK_DIR/utils:stack_utils_common",
   ]
 
-  external_deps = common_external_deps
+  external_deps = common_external_deps + [
+    "bounds_checking_function:libsec_shared",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
+    "init:libbegetutil",
+  ]
 
   part_name = "netstack"
   subsystem_name = "communication"

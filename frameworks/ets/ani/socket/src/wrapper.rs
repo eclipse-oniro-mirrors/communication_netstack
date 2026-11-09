@@ -576,6 +576,8 @@ pub mod ffi {
     }
 
     struct FFITlsSecureOptions {
+        has_cert_alias: bool,
+        cert_alias: String,
         has_ca: bool,
         ca: Vec<String>,
         has_cert: bool,
@@ -658,10 +660,14 @@ pub mod ffi {
         alpn_protocols: Vec<String>,
         has_skip_remote_validation: bool,
         skip_remote_validation: bool,
+        has_ssl_server_hostname_verification: bool,
+        ssl_server_hostname_verification: bool,
         has_proxy: bool,
         proxy: FFIProxyOptions,
         has_timeout: bool,
         timeout: i32,
+        has_server_name: bool,
+        server_name: String,
     }
 
     extern "Rust" {
@@ -1052,6 +1058,11 @@ impl From<&ffi::FFIUdpExtraOptions> for bridge::UDPExtraOptions {
 
 impl From<&bridge::TCPExtraOptions> for ffi::FFITcpExtraOptions {
     fn from(opts: &bridge::TCPExtraOptions) -> Self {
+        let (has_linger, linger_on, linger_linger) = match opts.socket_linger.as_ref() {
+            Some(l) => (true, l.on.unwrap_or(false), l.linger.unwrap_or(0)),
+            None => (false, false, 0),
+        };
+
         ffi::FFITcpExtraOptions {
             has_receive_buffer_size: opts.receive_buffer_size.is_some(),
             receive_buffer_size: opts.receive_buffer_size.unwrap_or(0),
@@ -1068,8 +1079,8 @@ impl From<&bridge::TCPExtraOptions> for ffi::FFITcpExtraOptions {
             has_tcp_no_delay: opts.tcp_no_delay.is_some(),
             tcp_no_delay: opts.tcp_no_delay.unwrap_or(false),
             has_socket_linger: opts.socket_linger.is_some(),
-            socket_linger_on: opts.socket_linger.as_ref().map(|s| s.on).unwrap_or(false),
-            socket_linger_linger: opts.socket_linger.as_ref().map(|s| s.linger).unwrap_or(0),
+            socket_linger_on: linger_on,
+            socket_linger_linger: linger_linger,
             has_tcp_fast_open: opts.tcp_fast_open.is_some(),
             tcp_fast_open: opts.tcp_fast_open.unwrap_or(false),
         }
@@ -1088,8 +1099,8 @@ impl From<&ffi::FFITcpExtraOptions> for bridge::TCPExtraOptions {
             tcp_no_delay: if opts.has_tcp_no_delay { Some(opts.tcp_no_delay) } else { None },
             socket_linger: if opts.has_socket_linger {
                 Some(bridge::SocketLingerOptions {
-                    on: opts.socket_linger_on,
-                    linger: opts.socket_linger_linger,
+                    on: Some(opts.socket_linger_on),
+                    linger: Some(opts.socket_linger_linger),
                 }) } else { None },
             tcp_fast_open: if opts.has_tcp_fast_open { Some(opts.tcp_fast_open) } else { None },
         }
@@ -1103,7 +1114,7 @@ impl From<&bridge::TLSSecureOptions> for ffi::FFITlsSecureOptions {
             Some(bridge::UnionCaCert::S(s)) => (true, vec![s.clone()]),
             Some(bridge::UnionCaCert::Array(v)) => (true, v.clone()),
         };
-        let (has_cert, cert_vec) = match &sec.cert {
+        let (has_cert, cert_vec) = match if sec.cert_alias.is_some() { None } else { sec.cert.as_ref() } {
             None => (false, vec![]),
             Some(bridge::UnionCaCert::S(s)) => (true, vec![s.clone()]),
             Some(bridge::UnionCaCert::Array(v)) => (true, v.clone()),
@@ -1125,14 +1136,16 @@ impl From<&bridge::TLSSecureOptions> for ffi::FFITlsSecureOptions {
             ),
         };
         ffi::FFITlsSecureOptions {
+            has_cert_alias: sec.cert_alias.is_some(),
+            cert_alias: sec.cert_alias.clone().unwrap_or_default(),
             has_ca,
             ca: ca_vec,
             has_cert,
             cert: cert_vec,
-            has_key: sec.key.is_some(),
-            key: sec.key.clone().unwrap_or_default(),
-            has_password: sec.password.is_some(),
-            password: sec.password.clone().unwrap_or_default(),
+            has_key: sec.cert_alias.is_none() && sec.key.is_some(),
+            key: if sec.cert_alias.is_some() { String::new() } else { sec.key.clone().unwrap_or_default() },
+            has_password: sec.cert_alias.is_none() && sec.password.is_some(),
+            password: if sec.cert_alias.is_some() { String::new() } else { sec.password.clone().unwrap_or_default() },
             has_protocols,
             protocols: protocols_vec,
             has_use_remote_cipher_prefer: sec.use_remote_cipher_prefer.is_some(),
@@ -1195,6 +1208,7 @@ impl From<&ffi::FFITlsSecureOptions> for bridge::TLSSecureOptions {
         };
 
         bridge::TLSSecureOptions {
+            cert_alias: if sec.has_cert_alias { Some(sec.cert_alias.clone()) } else { None },
             ca,
             cert,
             key: if sec.has_key { Some(sec.key.clone()) } else { None },
@@ -1399,10 +1413,14 @@ impl From<&bridge::TLSConnectOptions> for ffi::FFITlsConnectOptions {
             alpn_protocols: opts.alpn_protocols.clone().unwrap_or_default(),
             has_skip_remote_validation: opts.skip_remote_validation.is_some(),
             skip_remote_validation: opts.skip_remote_validation.unwrap_or(false),
+            has_ssl_server_hostname_verification: opts.ssl_server_hostname_verification.is_some(),
+            ssl_server_hostname_verification: opts.ssl_server_hostname_verification.unwrap_or(false),
             has_proxy,
             proxy,
             has_timeout: opts.timeout.is_some(),
             timeout: opts.timeout.unwrap_or(0),
+            has_server_name: opts.server_name.is_some(),
+            server_name: opts.server_name.clone().unwrap_or_default(),
         }
     }
 }
@@ -1414,8 +1432,10 @@ impl From<&ffi::FFITlsConnectOptions> for bridge::TLSConnectOptions {
             secure_options: bridge::TLSSecureOptions::from(&opts.secure_options),
             alpn_protocols: if opts.has_alpn_protocols { Some(opts.alpn_protocols.clone()) } else { None },
             skip_remote_validation: if opts.has_skip_remote_validation { Some(opts.skip_remote_validation) } else { None },
+            ssl_server_hostname_verification: if opts.has_ssl_server_hostname_verification { Some(opts.ssl_server_hostname_verification) } else { None },
             proxy: if opts.has_proxy { Some(bridge::ProxyOptions::from(&opts.proxy)) } else { None },
             timeout: if opts.has_timeout { Some(opts.timeout) } else { None },
+            server_name: if opts.has_server_name { Some(opts.server_name.clone()) } else { None },
         }
     }
 }

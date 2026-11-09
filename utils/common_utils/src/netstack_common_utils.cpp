@@ -26,13 +26,14 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <mutex>
 #include <regex>
 #include <string>
 #include <unistd.h>
 #include <vector>
 #include <fstream>
 #include <sstream>
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(LINUX_PLATFORM)
 #include <filesystem>
 #endif
 
@@ -41,7 +42,8 @@
 #endif // HAS_NETMANAGER_BASE
 
 #include "netstack_log.h"
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "netstack_apipolicy_utils.h"
 #include "netstack_bundle_utils.h"
 #endif
@@ -193,7 +195,8 @@ bool HasInternetPermission()
 
 bool IsAtomicService(std::string &bundleName)
 {
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return BundleUtils::IsAtomicService(bundleName);
 #else
     return false;
@@ -202,7 +205,8 @@ bool IsAtomicService(std::string &bundleName)
 
 bool IsAllowedHostname(const std::string &bundleName, const std::string &domainType, const std::string &url)
 {
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (bundleName.empty()) {
         NETSTACK_LOGE("isAllowedHostnameForAtomicService bundleName is empty");
         return true;
@@ -404,6 +408,48 @@ int DetectIPType(const std::string &ip)
     return INVALID_IP_TYPE;
 }
 
+static bool IsValidDomainName(const std::string &domain)
+{
+    constexpr size_t maxDomainLabelLen = 63;
+    if (domain.empty() || domain.front() == '-' || domain.back() == '-') {
+        return false;
+    }
+    size_t labelStart = 0;
+    for (size_t i = 0; i <= domain.length(); i++) {
+        if (i == domain.length() || domain[i] == '.') {
+            if (i == labelStart || i - labelStart > maxDomainLabelLen || domain[labelStart] == '-' ||
+                domain[i - 1] == '-') {
+                return false;
+            }
+            labelStart = i + 1;
+        } else if (!((domain[i] >= 'a' && domain[i] <= 'z') || (domain[i] >= 'A' && domain[i] <= 'Z') ||
+                     (domain[i] >= '0' && domain[i] <= '9')) && domain[i] != '-') {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::string GetValidServerName(const std::string &serverName, uint32_t maxLength)
+{
+    std::string name = serverName;
+    if (!name.empty() && name.back() == '.') {
+        name.pop_back();
+    }
+    if (name.empty() || name.length() > maxLength) {
+        return "";
+    }
+    if (DetectIPType(name) != INVALID_IP_TYPE) {
+        return "";
+    }
+    return IsValidDomainName(name) ? name : "";
+}
+
+std::string GetValidServerName(const std::string &serverName)
+{
+    return GetValidServerName(serverName, MAX_SERVER_NAME_LEN);
+}
+
 bool IsValidIPV4(const std::string &ip)
 {
     return IsValidIP(ip, AF_INET);
@@ -504,7 +550,7 @@ std::optional<std::string> GetBundleName()
 
 bool GetFileDataFromFilePath(const std::string& filePath, std::string& fileData)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(LINUX_PLATFORM)
     std::error_code error;
     auto path = std::filesystem::absolute(filePath, error);
     if (error) {

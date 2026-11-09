@@ -126,6 +126,7 @@ ohos_unittest("tls_socket_core_test") {
   branch_protector_ret = "pac_ret"
 
   sources = [
+    "../alias/tls_cert_alias_socket_test.cpp",
     "socket_error.test.cpp",
     "tls_certificate.test.cpp",
     "tls_config_enhanced.test.cpp",
@@ -142,6 +143,7 @@ ohos_unittest("tls_socket_core_test") {
   deps = [
     "$NETSTACK_DIR/utils:stack_utils_common",
     "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
   ]
   external_deps = [
     "c_utils:utils",
@@ -167,6 +169,7 @@ ohos_unittest("tls_socket_core_test") {
   }
 
   module_out_path = "netstack/netstack/tls_socket_unittest"
+  deps += [ "$NETSTACK_NATIVE_ROOT/tls_socket:tls_cert_alias" ]
   part_name = "netstack"
   subsystem_name = "communication"
 }

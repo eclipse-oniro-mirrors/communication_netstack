@@ -106,15 +106,11 @@ static const lws_http_mount mount = {
     LWSMPRO_FILE, 1, NULL, NULL, NULL, NULL, 0,
 };
 
+// LCOV_EXCL_START
 void OnServerError(WebSocketServer *server, int32_t code)
 {
     if (server == nullptr || server->GetServerContext() == nullptr) {
         NETSTACK_LOGE("server or context is null");
-        return;
-    }
-    auto errorCallback = server->onErrorCallback_.load(std::memory_order_acquire);
-    if (errorCallback == nullptr) {
-        NETSTACK_LOGE("onErrorCallback_ is null");
         return;
     }
     ErrorResult errorResult { static_cast<unsigned int>(code), "Unknown error" };
@@ -122,10 +118,10 @@ void OnServerError(WebSocketServer *server, int32_t code)
     if (it != WEBSOCKET_ERR_MAP.end()) {
         errorResult.errorMessage = it->second.c_str();
     }
-    errorCallback(server, errorResult);
+    server->onErrorCallback_.Invoke(server, errorResult);
 }
 
-// LCOV_EXCL_START
+
 void RunServerService(WebSocketServer *server)
 {
     NETSTACK_LOGI("websocket run service start");
@@ -225,9 +221,7 @@ int LwsCallbackEstablished(lws *wsi, lws_callback_reasons reason, void *user, vo
     server->GetServerContext()->AddConnections(clientId, wsi, connection);
     clientUserData->SetLws(wsi);
     clientUserData->TriggerWritable();
-    if (auto callback = server->onConnectCallback_.load(std::memory_order_acquire); callback != nullptr) {
-        callback(server, connection);
-    }
+    server->onConnectCallback_.Invoke(server, connection);
     return HttpDummy(wsi, reason, user, in, len);
 }
 // LCOV_EXCL_STOP
@@ -266,7 +260,10 @@ bool IsOverMaxCntForOneClient(WebSocketServer *server, const std::vector<SocketC
 bool IsOverMaxClientConns(WebSocketServer *server, const std::string &ip)
 {
     std::vector<SocketConnection> connections;
-    server->ListAllConnections(connections);
+    if (server->ListAllConnections(connections) != 0) {
+        NETSTACK_LOGE("ListAllConnections failed, reject connection to avoid limit bypass");
+        return true;
+    }
     if (IsOverMaxConcurrentClientsCnt(server, connections, ip)) {
         NETSTACK_LOGI("current client connections is over max concurrent number");
         return true;
@@ -312,14 +309,12 @@ int LwsCallbackClosed(lws *wsi, lws_callback_reasons reason, void *user, void *i
         OnServerError(server, COMMON_ERROR_CODE);
     }
     std::string clientId = server->GetServerContext()->GetClientIdFromConnectionByWsi(wsi);
-    if (auto callback = server->onCloseCallback_.load(std::memory_order_acquire); callback != nullptr) {
-        SocketConnection sc = server->GetServerContext()->GetConnectionFromWsi(wsi);
-        CloseResult cr;
-        cr.code = clientUserData->GetCloseStatus();
-        std::string closeReason = clientUserData->GetCloseReason();
-        cr.reason = closeReason.c_str();
-        callback(server, cr, sc);
-    }
+    SocketConnection sc = server->GetServerContext()->GetConnectionFromWsi(wsi);
+    CloseResult cr;
+    cr.code = clientUserData->GetCloseStatus();
+    std::string closeReason = clientUserData->GetCloseReason();
+    cr.reason = closeReason.c_str();
+    server->onCloseCallback_.Invoke(server, cr, sc);
     server->GetServerContext()->RemoveConnections(clientId);
     server->GetServerContext()->RemoveClientUserData(wsi);
     lws_set_wsi_user(wsi, nullptr);
@@ -429,6 +424,10 @@ int LwsCallbackWsPeerInitiatedCloseServer(lws *wsi, lws_callback_reasons reason,
     std::string closeReason;
     closeReason.append(reinterpret_cast<char *>(in) + sizeof(uint16_t), len - sizeof(uint16_t));
     auto *clientUserData = reinterpret_cast<UserData *>(lws_wsi_user(wsi));
+    if (clientUserData == nullptr) {
+        NETSTACK_LOGE("clientUserData is null");
+        return RaiseServerError(server);
+    }
     clientUserData->Close(static_cast<lws_close_status>(closeStatus), closeReason);
     return HttpDummy(wsi, reason, user, in, len);
 }
@@ -503,14 +502,12 @@ int LwsCallbackReceive(lws *wsi, lws_callback_reasons reason, void *user, void *
         return HttpDummy(wsi, reason, user, in, len);
     }
     SocketConnection connection = server->GetServerContext()->GetConnectionFromWsi(wsi);
-    if (auto callback = server->onMessageReceiveCallback_.load(std::memory_order_acquire); callback != nullptr) {
-        if (isBinary) {
-            auto data = server->GetServerContext()->GetWsServerBinaryData(wsi);
-            callback(server, data, data.size(), connection);
-        } else {
-            auto data = server->GetServerContext()->GetWsServerTextData(wsi);
-            callback(server, data, data.size(), connection);
-        }
+    if (isBinary) {
+        auto data = server->GetServerContext()->GetWsServerBinaryData(wsi);
+        server->onMessageReceiveCallback_.Invoke(server, data, data.size(), connection);
+    } else {
+        auto data = server->GetServerContext()->GetWsServerTextData(wsi);
+        server->onMessageReceiveCallback_.Invoke(server, data, data.size(), connection);
     }
     server->GetServerContext()->ClearWsServerBinaryData(wsi);
     server->GetServerContext()->ClearWsServerTextData(wsi);
@@ -570,7 +567,11 @@ static bool CheckFilePath(std::string &path)
 
 bool FillServerCertPath(ServerContext *context, lws_context_creation_info &info)
 {
-    ServerCert sc = context->startServerConfig_.serverCert;
+    if (context == nullptr) {
+        NETSTACK_LOGE("server context is nullptr");
+        return false;
+    }
+    ServerCert &sc = context->startServerConfig_.serverCert;
     if (!sc.certPath.empty()) {
         if (!CheckFilePath(sc.certPath) || !CheckFilePath(sc.keyPath)) {
             NETSTACK_LOGE("client cert not exist");
@@ -834,10 +835,10 @@ int WebSocketServer::ListAllConnections(std::vector<SocketConnection> &connectio
 int WebSocketServer::Registcallback(OnErrorCallback onError, OnConnectCallback onConnect, OnCloseCallback onClose,
     OnMessageReceiveCallback onMessageReceive)
 {
-    onErrorCallback_ = onError;
-    onConnectCallback_ = onConnect;
-    onCloseCallback_ = onClose;
-    onMessageReceiveCallback_ = onMessageReceive;
+    onMessageReceiveCallback_.Store(onMessageReceive);
+    onCloseCallback_.Store(onClose);
+    onErrorCallback_.Store(onError);
+    onConnectCallback_.Store(onConnect);
     return 0;
 }
 

@@ -169,6 +169,28 @@ void Socks5Instance::CloseSocket()
     }
 }
 
+/* TCP 实例只解除对 fd 的使用权，不关闭：socketId_ 属于 EventManager（由 InitSocks5TcpInstance
+ * 传入 context->GetSocketFd()）。若在此 close，manager 的 socketFd_ 仍保留该 fd 号，随后应用
+ * 调用 tcpSocket.close() 时 ExecClose 会拿这个已归还内核的旧号再关一次；旧号若已被复用（如
+ * 应用侧 fopen 打开文件占用同号），即造成 fdsan 双重关闭/误关他人 fd。fd 生命周期统一由属主
+ * 回收：应用 close → ExecClose，JS 对象回收 → ExecFinalizeClose。 */
+void Socks5TcpInstance::CloseSocket()
+{
+    if (socketId_ != SOCKS5_INVALID_SOCKET_FD) {
+        NETSTACK_LOGI("socks5 tcp instance disown socket:%{public}d", socketId_);
+        socketId_ = SOCKS5_INVALID_SOCKET_FD;
+    }
+}
+
+/* TLS 实例同 TCP：socketId_ 借自 EventManager，只解绑不关闭，理由同上。 */
+void Socks5TlsInstance::CloseSocket()
+{
+    if (socketId_ != SOCKS5_INVALID_SOCKET_FD) {
+        NETSTACK_LOGI("socks5 tls instance disown socket:%{public}d", socketId_);
+        socketId_ = SOCKS5_INVALID_SOCKET_FD;
+    }
+}
+
 static bool SocketRecvHandle(int socketId, std::pair<std::unique_ptr<char[]> &, int> &bufInfo,
     std::pair<sockaddr *, socklen_t> &addrInfo, const Socket::SocketExec::MessageCallback &callback)
 {

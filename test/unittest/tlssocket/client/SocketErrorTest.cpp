@@ -42,6 +42,12 @@ HWTEST_F(SocketErrorTest, SocketError, TestSize.Level2)
     EXPECT_STREQ(errorMsg.data(), "Interrupted system call");
 }
 
+HWTEST_F(SocketErrorTest, SocketErrorHostnameVerifyFailed, TestSize.Level2)
+{
+    std::string errorMsg = MakeErrorMessage(TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED);
+    EXPECT_STREQ(errorMsg.data(), "SSL server hostname verification failed");
+}
+
 HWTEST_F(SocketErrorTest, SocketError2, TestSize.Level2)
 {
     std::string errorMsg = MakeErrorMessage(ERROR_NOT_EXIT);

@@ -49,7 +49,8 @@ HttpRequestOptions::HttpRequestOptions()
       certEnc_(""),
       certTypeEnc_(""),
       keyEnc_(""),
-      sniHostName_("")
+      sniHostName_(""),
+      followRedirectPostToGet_(false)
 {
 }
 
@@ -81,6 +82,18 @@ void HttpRequestOptions::SetQueryParams(const std::string &queryParams)
 void HttpRequestOptions::SetHeader(const std::string &key, const std::string &val)
 {
     header_[key] = val;
+}
+
+void HttpRequestOptions::RemoveHeaderByKey(const std::string &key)
+{
+    const std::string lowerKey = CommonUtils::ToLower(key);
+    for (auto item = header_.begin(); item != header_.end();) {
+        if (CommonUtils::ToLower(item->first) == lowerKey) {
+            item = header_.erase(item);
+        } else {
+            ++item;
+        }
+    }
 }
 
 void HttpRequestOptions::SetReadTimeout(uint32_t readTimeout)
@@ -231,6 +244,16 @@ void HttpRequestOptions::SetCanSkipCertVerifyFlag(bool canCertVerify)
 bool HttpRequestOptions::GetCanSkipCertVerifyFlag() const
 {
     return canSkipCertVerify_;
+}
+
+void HttpRequestOptions::SetEnableCertRevocationCheck(bool enableCertRevocationCheck)
+{
+    enableCertRevocationCheck_ = enableCertRevocationCheck;
+}
+
+bool HttpRequestOptions::GetEnableCertRevocationCheck() const
+{
+    return enableCertRevocationCheck_;
 }
 void HttpRequestOptions::SetUsingHttpProxyType(UsingHttpProxyType type)
 {
@@ -555,6 +578,16 @@ const std::string &HttpRequestOptions::GetSniHostName() const
     return sniHostName_;
 }
 
+void HttpRequestOptions::SetSslServerHostnameVerification(bool sslServerHostnameVerification)
+{
+    sslServerHostnameVerification_ = sslServerHostnameVerification;
+}
+
+bool HttpRequestOptions::GetSslServerHostnameVerification() const
+{
+    return sslServerHostnameVerification_;
+}
+
 void HttpRequestOptions::SetReuseConnectionsFlag(bool reuseConnectionsFlag)
 {
     reuseConnectionsFlag_ = reuseConnectionsFlag;
@@ -573,6 +606,36 @@ void HttpRequestOptions::SetInactivityMs(int inactivityMs)
 int HttpRequestOptions::GetInactivityMs() const
 {
     return inactivityMs_;
+}
+
+void HttpRequestOptions::SetFollowRedirectPostToGet(bool followRedirectPostToGet)
+{
+    followRedirectPostToGet_ = followRedirectPostToGet;
+}
+
+bool HttpRequestOptions::GetFollowRedirectPostToGet() const
+{
+    return followRedirectPostToGet_;
+}
+
+void HttpRequestOptions::SetLowSpeedLimit(uint32_t lowSpeedLimit)
+{
+    lowSpeedLimit_ = lowSpeedLimit;
+}
+
+uint32_t HttpRequestOptions::GetLowSpeedLimit() const
+{
+    return lowSpeedLimit_;
+}
+
+void HttpRequestOptions::SetLowSpeedTime(uint32_t lowSpeedTime)
+{
+    lowSpeedTime_ = lowSpeedTime;
+}
+
+uint32_t HttpRequestOptions::GetLowSpeedTime() const
+{
+    return lowSpeedTime_;
 }
 
 void HttpRequestOptions::SetSocks5Proxy(const std::string &host, int32_t port,

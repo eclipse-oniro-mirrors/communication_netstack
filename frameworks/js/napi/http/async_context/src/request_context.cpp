@@ -17,13 +17,13 @@
 
 #include <algorithm>
 #include <atomic>
-#include <charconv>
 #include <ctime>
 #include <iomanip>
 #include <limits>
 #include <string>
 #include <utility>
 #include <sstream>
+#include <cmath>
 
 #include "constant.h"
 #include "http_exec.h"
@@ -56,6 +56,32 @@ static constexpr const uint32_t DNS_SERVER_SIZE = 3;
 
 static constexpr size_t CADATA_STRING_MAX_LENGTH = 8000;
 namespace OHOS::NetStack::Http {
+bool RequestContext::ConvertToPositiveInt32(double number, uint32_t &result)
+{
+    if (!std::isfinite(number) || std::floor(number) != number || number <= 0 || number > INT32_MAX) {
+        return false;
+    }
+    result = static_cast<uint32_t>(number);
+    return true;
+}
+
+void RequestContext::ParseLowSpeedOption(napi_value optionsValue, const char *key,
+    void (HttpRequestOptions::*setter)(uint32_t))
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, key)) {
+        return;
+    }
+    napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, key);
+    uint32_t result = 0;
+    double number = 0;
+    if (NapiUtils::GetValueType(GetEnv(), value) == napi_number &&
+        napi_get_value_double(GetEnv(), value, &number) == napi_ok && ConvertToPositiveInt32(number, result)) {
+        (options.*setter)(result);
+        return;
+    }
+    NETSTACK_LOGI("%{public}s is invalid, ignored", key);
+}
+
 static const std::map<int32_t, const char *> HTTP_ERR_MAP = {
     {HTTP_UNSUPPORTED_PROTOCOL, "Unsupported protocol"},
     {HTTP_URL_MALFORMAT, "Invalid URL format or missing URL"},
@@ -226,6 +252,11 @@ void RequestContext::ParseNumberOptions(napi_value optionsValue)
             NapiUtils::GetUint32Property(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_CONNECT_TIMEOUT));
     }
 
+    ParseLowSpeedOption(optionsValue, HttpConstant::PARAM_KEY_LOW_SPEED_LIMIT,
+        &HttpRequestOptions::SetLowSpeedLimit);
+    ParseLowSpeedOption(optionsValue, HttpConstant::PARAM_KEY_LOW_SPEED_TIME,
+        &HttpRequestOptions::SetLowSpeedTime);
+
     if (NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_CACHE)) {
         napi_value value = NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_USING_CACHE);
         if (NapiUtils::GetValueType(GetEnv(), value) == napi_boolean) {
@@ -391,6 +422,18 @@ void RequestContext::ParseServerAuthentication(napi_value optionsValue)
     options.SetServerAuthentication(serverAuthentication);
 }
 
+void RequestContext::ParseEnableCertRevocationCheck(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_ENABLE_CERT_REVOCATION_CHECK)) {
+        return;
+    }
+    napi_value value =
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_ENABLE_CERT_REVOCATION_CHECK);
+    if (NapiUtils::GetValueType(GetEnv(), value) == napi_boolean) {
+        options.SetEnableCertRevocationCheck(NapiUtils::GetBooleanFromValue(GetEnv(), value));
+    }
+}
+
 void RequestContext::ParseSniHostName(napi_value optionsValue)
 {
     if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_SNI_HOSTNAME)) {
@@ -413,6 +456,36 @@ void RequestContext::ParseSniHostName(napi_value optionsValue)
         NETSTACK_LOGE("sniHostName length error");
         return;
     }
+}
+
+void RequestContext::ParseSslServerHostnameVerification(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(
+        GetEnv(), optionsValue, HttpConstant::PARAM_KEY_SSL_SERVER_HOSTNAME_VERIFICATION)) {
+        return;
+    }
+    napi_value value = NapiUtils::GetNamedProperty(
+        GetEnv(), optionsValue, HttpConstant::PARAM_KEY_SSL_SERVER_HOSTNAME_VERIFICATION);
+    if (NapiUtils::GetValueType(GetEnv(), value) != napi_boolean) {
+        return;
+    }
+    options.SetSslServerHostnameVerification(NapiUtils::GetBooleanFromValue(GetEnv(), value));
+}
+
+void RequestContext::ParseFollowRedirectPostToGet(napi_value optionsValue)
+{
+    if (!NapiUtils::HasNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_FOLLOW_REDIRECT_POST_TO_GET)) {
+        return;
+    }
+
+    napi_value isFollow =
+        NapiUtils::GetNamedProperty(GetEnv(), optionsValue, HttpConstant::PARAM_KEY_FOLLOW_REDIRECT_POST_TO_GET);
+    if (NapiUtils::GetValueType(GetEnv(), isFollow) != napi_boolean) {
+        NETSTACK_LOGE("followRedirectPostToGet type error");
+        return;
+    }
+    bool isFollowBool = NapiUtils::GetBooleanFromValue(GetEnv(), isFollow);
+    options.SetFollowRedirectPostToGet(isFollowBool);
 }
 
 void RequestContext::ParseHeader(napi_value optionsValue)
@@ -726,10 +799,6 @@ bool RequestContext::GetRequestBody(napi_value extraData)
         if (body.empty()) {
             return false;
         }
-        if (body.size() > options.GetMaxLimit()) {
-            NETSTACK_LOGE("body size exceeds maxLimit");
-            return false;
-        }
         options.SetBody(body.c_str(), body.size());
         return true;
     }
@@ -740,10 +809,6 @@ bool RequestContext::GetRequestBody(napi_value extraData)
         if (data == nullptr) {
             return false;
         }
-        if (length > options.GetMaxLimit()) {
-            NETSTACK_LOGE("arraybuffer body size exceeds maxLimit");
-            return false;
-        }
         options.SetBody(data, length);
         return true;
     }
@@ -752,10 +817,6 @@ bool RequestContext::GetRequestBody(napi_value extraData)
         std::string body = NapiUtils::GetStringFromValueUtf8(GetEnv(), NapiUtils::JsonStringify(GetEnv(), extraData));
         if (body.empty()) {
             NETSTACK_LOGD("GetRequestBody extraData null for post method");
-            return false;
-        }
-        if (body.length() > options.GetMaxLimit()) {
-            NETSTACK_LOGE("object body size exceeds maxLimit");
             return false;
         }
         options.SetBody(body.c_str(), body.length());
@@ -869,6 +930,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     }
 
     ParseSniHostName(optionsValue);
+    ParseSslServerHostnameVerification(optionsValue);
     ParseHeader(optionsValue);
     ParseCaPath(optionsValue);
     ParseCaData(optionsValue);
@@ -878,6 +940,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParseMultiFormData(optionsValue);
     ParseCertificatePinning(optionsValue);
     ParseRemoteValidationMode(optionsValue);
+    ParseEnableCertRevocationCheck(optionsValue);
     ParseTlsOption(optionsValue);
     ParseServerAuthentication(optionsValue);
     SetParseOK(true);
@@ -888,6 +951,7 @@ void RequestContext::UrlAndOptions(napi_value urlValue, napi_value optionsValue)
     ParsePathPreference(optionsValue);
     ParseReuseConnections(optionsValue);
     ParseInactivityMs(optionsValue);
+    ParseFollowRedirectPostToGet(optionsValue);
 }
 
 void RequestContext::SetEnableAutoCookie(bool enableAutoCookie)
@@ -1753,8 +1817,7 @@ void RequestContext::SetConnectionExtraInfoToResult(napi_value result)
     auto readInt = [this](const std::string& key, int32_t defaultValue) -> int32_t {
         std::string value = response.GetExtraInfoItem(key);
         int32_t result;
-        auto [ptr, ec] = std::from_chars(value.data(), value.data() + value.size(), result);
-        return (ec == std::errc()) ? result : defaultValue;
+        return CommonUtils::ParseDecimalInteger(value, result, false) ? result : defaultValue;
     };
     napi_value extraInfoValue = nullptr;
     napi_env env = GetEnv();
@@ -1789,8 +1852,30 @@ void RequestContext::SetConnectionExtraInfoToResult(napi_value result)
         CommonUtils::ToLower(CommonUtils::Strip(isCacheHit)) == "true");
     NapiUtils::SetInt32Property(env, extraInfoValue, HttpConstant::PARAM_KEY_REDIRECT_COUNT,
         readInt(HttpConstant::PARAM_KEY_REDIRECT_COUNT, 0));
+    SetExtraInfoInt64Property(env, extraInfoValue, HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES);
+    SetExtraInfoInt64Property(env, extraInfoValue, HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES);
 
     NapiUtils::SetNamedProperty(env, result, HttpConstant::PARAM_KEY_CONNECTION_EXTRA_INFO, extraInfoValue);
+}
+
+void RequestContext::SetExtraInfoInt64Property(napi_env env, napi_value extraInfoValue, const std::string &key)
+{
+    int64_t result = GetExtraInfoInt64Value(key);
+    napi_value jsValue = nullptr;
+    if (napi_create_int64(env, result, &jsValue) != napi_ok) {
+        return;
+    }
+    napi_set_named_property(env, extraInfoValue, key.c_str(), jsValue);
+}
+
+int64_t RequestContext::GetExtraInfoInt64Value(const std::string &key) const
+{
+    int64_t result = 0;
+    std::string value = response.GetExtraInfoItem(key);
+    if (!CommonUtils::ParseDecimalInteger(value, result, false)) {
+        result = 0;
+    }
+    return result;
 }
 
 void RequestContext::ParseInactivityMs(napi_value optionsValue)

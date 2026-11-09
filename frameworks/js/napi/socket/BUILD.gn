@@ -138,7 +138,10 @@ ohos_shared_library("socket") {
     "-O2",
   ]
 
-  deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
+  deps = [
+    "$NETSTACK_DIR/utils/napi_utils:napi_utils",
+    "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl",
+  ]
 
   external_deps = [
     "hilog:libhilog",
@@ -168,6 +171,7 @@ ohos_shared_library("socket") {
   }
 
   relative_install_dir = "module/net"
+  deps += [ "$NETSTACK_NATIVE_ROOT/tls_socket:tls_cert_alias" ]
   part_name = "netstack"
   subsystem_name = "communication"
 }

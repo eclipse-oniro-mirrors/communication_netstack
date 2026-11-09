@@ -46,12 +46,16 @@ const char *const HttpConstant::PARAM_KEY_DNS_SERVERS = "dnsServers";
 const char *const HttpConstant::PARAM_KEY_RESUME_FROM = "resumeFrom";
 const char *const HttpConstant::PARAM_KEY_RESUME_TO = "resumeTo";
 const char *const HttpConstant::PARAM_KEY_CONNECT_TIMEOUT = "connectTimeout";
+const char *const HttpConstant::PARAM_KEY_LOW_SPEED_LIMIT = "lowSpeedLimit";
+const char *const HttpConstant::PARAM_KEY_LOW_SPEED_TIME = "lowSpeedTime";
 const char *const HttpConstant::PARAM_KEY_USING_PROTOCOL = "usingProtocol";
 const char *const HttpConstant::PARAM_KEY_USING_CACHE = "usingCache";
 const char *const HttpConstant::PARAM_KEY_EXPECT_DATA_TYPE = "expectDataType";
 const char *const HttpConstant::PARAM_KEY_PRIORITY = "priority";
 const char *const HttpConstant::PARAM_KEY_MAX_REDIRECTS = "maxRedirects";
 const char *const HttpConstant::PARAM_KEY_SNI_HOSTNAME = "sniHostName";
+const char *const HttpConstant::PARAM_KEY_SSL_SERVER_HOSTNAME_VERIFICATION = "sslServerHostnameVerification";
+const char *const HttpConstant::PARAM_KEY_FOLLOW_REDIRECT_POST_TO_GET = "followRedirectPostToGet";
 
 const char *const HttpConstant::PARAM_KEY_USING_HTTP_PROXY = "usingProxy";
 const char *const HttpConstant::PARAM_KEY_CA_PATH = "caPath";
@@ -63,6 +67,7 @@ const char *const HttpConstant::PARAM_KEY_MULTI_FORM_DATA_LIST = "multiFormDataL
 const char *const HttpConstant::PARAM_KEY_CERTIFICATE_PINNING = "certificatePinning";
 
 const char *const HttpConstant::PARAM_KEY_REMOTE_VALIDATION = "remoteValidation";
+const char *const HttpConstant::PARAM_KEY_ENABLE_CERT_REVOCATION_CHECK = "enableCertRevocationCheck";
 const char *const HttpConstant::PARAM_KEY_TLS_OPTION = "tlsOptions";
 const char *const HttpConstant::PARAM_KEY_SERVER_AUTH = "serverAuthentication";
 
@@ -181,6 +186,8 @@ const char *const HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION = "isReusedConnec
 const char *const HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION = "isProxyConnection";
 const char *const HttpConstant::PARAM_KEY_IS_CACHE_HIT = "isCacheHit";
 const char *const HttpConstant::PARAM_KEY_REDIRECT_COUNT = "redirectCount";
+const char *const HttpConstant::PARAM_KEY_SENT_TOTAL_BYTES = "sentTotalBytes";
+const char *const HttpConstant::PARAM_KEY_RECEIVED_TOTAL_BYTES = "receivedTotalBytes";
 
 const char *const HttpConstant::PARAM_KEY_ENABLE_AUTO_COOKIE = "enableAutoCookie";
 } // namespace OHOS::NetStack::Http

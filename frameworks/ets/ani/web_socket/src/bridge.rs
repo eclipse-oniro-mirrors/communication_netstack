@@ -67,6 +67,7 @@ pub struct AniWebSocketRequestOptions {
     pub proxy: Option<AniProxyConfiguration>,
     pub protocol: Option<String>,
     pub supportOriginPort: Option<bool>,
+    pub serverName: Option<String>,
 }
 
 impl AniWebSocketRequestOptions {
@@ -78,6 +79,7 @@ impl AniWebSocketRequestOptions {
             proxy: None,
             protocol: None,
             supportOriginPort: None,
+            serverName: None,
         }
     }
 }

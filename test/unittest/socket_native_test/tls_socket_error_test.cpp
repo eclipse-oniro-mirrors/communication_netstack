@@ -156,6 +156,17 @@ HWTEST_F(TlsSocketErrorTest, CustomErrorCodes, TestSize.Level1)
     EXPECT_FALSE(msgNotConnect.empty());
 }
 
+/**
+ * @tc.name: TlsSocketErrorTest_HostnameVerificationFailed
+ * @tc.desc: Test MakeErrorMessage for SSL server hostname verification failure
+ * @tc.type: FUNC
+ */
+HWTEST_F(TlsSocketErrorTest, HostnameVerificationFailed, TestSize.Level1)
+{
+    std::string msg = MakeErrorMessage(TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED);
+    EXPECT_EQ(msg, "SSL server hostname verification failed");
+}
+
 } // namespace TlsSocket
 } // namespace NetStack
 } // namespace OHOS

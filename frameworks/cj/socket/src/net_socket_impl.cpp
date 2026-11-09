@@ -39,7 +39,7 @@ CJTcpSocketProxy::~CJTcpSocketProxy()
     }
     StopRecvThread();
     if (sockFd_ >= 0) {
-        close(sockFd_);
+        fdsan_close_with_tag(sockFd_, CJ_SOCKET_FDSAN_TAG);
         sockFd_ = -1;
     }
 }
@@ -319,7 +319,7 @@ int32_t CJTcpSocketImpl::Bind(CJTcpSocketProxy *proxy, const CNetAddress &cAddr)
         proxy->SetFamily(address.GetSaFamily());
         if (!ExecTcpBind(sockFd, address, proxy->GetReuseAddr())) {
             int bindErr = errno;
-            close(sockFd);
+            fdsan_close_with_tag(sockFd, CJ_SOCKET_FDSAN_TAG);
             proxy->SetSocketFd(-1);
             return ConvertErrCode(bindErr);
         }
@@ -373,7 +373,7 @@ int32_t CJTcpSocketImpl::Connect(CJTcpSocketProxy *proxy, const CTcpConnectOptio
     bool asyncConnecting = false;
     int errCode = 0;
     if (!ExecConnect(sockFd, options, nullptr, asyncConnecting, errCode)) {
-        close(sockFd);
+        fdsan_close_with_tag(sockFd, CJ_SOCKET_FDSAN_TAG);
         proxy->SetSocketFd(-1);
         return ConvertErrCode(errCode);
     }

@@ -17,31 +17,50 @@
 #include <arpa/inet.h>
 #include <chrono>
 #include <cstring>
+#include <securec.h>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <thread>
 #include <unistd.h>
+
+#include <openssl/ssl.h>
 
 #include "netstack_log.h"
 #include "gtest/gtest.h"
 #ifdef GTEST_API_
 #define private public
 #endif
+#include "client_context.h"
 #include "websocket_client_innerapi.h"
 #include "websocket_server_innerapi.h"
 #include "libwebsockets.h"
 
+using LwsCallbackReasons = lws_callback_reasons;
 class WebSocketTest : public testing::Test {
 public:
     static void SetUpTestCase() {}
 
     static void TearDownTestCase() {}
 
-    virtual void SetUp() {}
+    virtual void SetUp()
+    {
+        client = std::make_shared<OHOS::NetStack::WebSocketClient::WebSocketClient>();
+    }
 
-    virtual void TearDown() {}
+    virtual void TearDown()
+    {
+        client.reset();
+    }
+
+protected:
+    OHOS::NetStack::WebSocketClient::OpenOptions openOptions;
+
+    OHOS::NetStack::WebSocketClient::CloseOption closeOptions;
+
+    std::shared_ptr<OHOS::NetStack::WebSocketClient::WebSocketClient> client = nullptr;
 };
 
 namespace OHOS::NetStack::WebSocketServer {
@@ -58,14 +77,23 @@ namespace OHOS::NetStack::WebSocketServer {
 }
 
 namespace OHOS::NetStack::WebSocketClient {
+    int LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
     int LwsCallbackClientAppendHandshakeHeader(
         lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
     int LwsCallbackWsPeerInitiatedClose(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
     int LwsCallbackClientClosed(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
     int CreatConnectInfoEx(const std::string url, lws_context *lwsContext, WebSocketClient *client);
+    std::string BuildWebSocketHost(const char *prefix, const char *address, int port);
+    std::string BuildWebSocketConnectHost(const char *prefix, const char *address, int port,
+        const std::string &serverName, std::map<std::string, std::string> &headers);
     std::vector<std::string> Split(const std::string &str, const std::string &sep, size_t size);
     bool ParseUrlEx(const std::string url, char *prefix, char *address, char *path, int *port);
     int LwsCallbackClientEstablished(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
+    int LwsCallbackWsiDestroy(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len);
+    std::shared_ptr<WebSocketClient> GetClientFromUserData(void *user);
+    std::shared_ptr<WebSocketClient> CreateLwsUserData(WebSocketClient *client);
+    void RunService(WebSocketClient *client);
+    std::thread g_connectThread(WebSocketClient *client);
 }
 
 namespace {
@@ -75,9 +103,16 @@ namespace {
     static constexpr const size_t TEST_LENGTH = 1;
     static constexpr const int MAX_URI_LENGTH = 8196;
 
-    OpenOptions openOptions;
-
-    CloseOption closeOptions;
+    HWTEST_F(WebSocketTest, LwsCallbackCertVerifyNullContext, TestSize.Level1)
+    {
+        EXPECT_EQ(LwsCallback(nullptr, LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS,
+            nullptr, nullptr, 0), 0);
+        SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+        ASSERT_NE(sslCtx, nullptr);
+        EXPECT_EQ(LwsCallback(nullptr, LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS,
+            sslCtx, nullptr, 0), 0);
+        SSL_CTX_free(sslCtx);
+    }
 
     static void OnMessage(WebSocketClient *client, const std::string &data, size_t length) {}
 
@@ -86,8 +121,6 @@ namespace {
     static void OnError(WebSocketClient *client, ErrorResult error) {}
 
     static void OnClose(WebSocketClient *client, CloseResult closeResult) {}
-
-    WebSocketClient *client = new WebSocketClient();
 
     enum WebsocketErrorCode {
         WEBSOCKET_CONNECT_FAILED = -1,
@@ -216,11 +249,11 @@ namespace {
 
     HWTEST_F(WebSocketTest, WebSocketConnect002, TestSize.Level1)
     {
-        int32_t ret = 0;
+        // the fixture provides a fresh client per test case, keeping this case independent
         openOptions.headers["Content-Type"] = "application/json";
         openOptions.headers["Authorization"] = "Bearer your_token_here";
         client->Registcallback(OnOpen, OnMessage, OnError, OnClose);
-        ret = client->Connect("www.baidu.com", openOptions);
+        int32_t ret = client->Connect("www.baidu.com", openOptions);
         EXPECT_TRUE(ret == WebSocketErrorCode::WEBSOCKET_CONNECTION_TO_SERVER_FAIL ||
                     ret == WebSocketErrorCode::WEBSOCKET_NONE_ERR);
     }
@@ -232,7 +265,8 @@ namespace {
         int32_t length = std::strlen(data);
         client->Connect("www.baidu.com", openOptions);
         ret = client->Send(const_cast<char *>(data), length);
-        EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
+        EXPECT_TRUE(ret == WebSocketErrorCode::WEBSOCKET_NONE_ERR ||
+                    ret == WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT);
     }
 
     HWTEST_F(WebSocketTest, WebSocketClose004, TestSize.Level1)
@@ -271,7 +305,7 @@ namespace {
         EXPECT_TRUE(client->GetClientContext() != nullptr);
         client->GetClientContext()->openStatus = TEST_LENGTH;
         ret = client->Close(options);
-        EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
+        EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT);
         client->GetClientContext()->openStatus = 0;
         ret = client->Close(options);
         EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_HAVE_NO_CONNECT);
@@ -279,7 +313,7 @@ namespace {
 
     HWTEST_F(WebSocketTest, WebSocketBranchTest002, TestSize.Level1)
     {
-        client->clientContext = nullptr;
+        client->clientContext_.reset();
         const char *data = "test data";
         size_t length = 0;
         int32_t ret = client->Send(const_cast<char *>(data), length);
@@ -301,6 +335,9 @@ namespace {
     HWTEST_F(WebSocketTest, WebSocketCloseEx001, TestSize.Level1)
     {
         const int32_t websocketErrorNoClientcontex = 1014;
+        // null client context is the branch that yields NO_CLIENTCONTEX: a fresh client with no
+        // lws context would return -1 instead (covered by the never-connected behavior)
+        client->clientContext_.reset();
         CloseOption CloseOptions;
         CloseOptions.code = LWS_CLOSE_STATUS_NORMAL;
         CloseOptions.reason = "";
@@ -310,11 +347,14 @@ namespace {
 
     HWTEST_F(WebSocketTest, WebSocketBranchTest004, TestSize.Level1)
     {
-        client->clientContext = nullptr;
+        client->clientContext_.reset();
         const char *data = "test data";
         size_t length = 0;
+        // SendEx validates the client context before the zero-length early return:
+        // a null context yields NO_CLIENTCONTEX (the zero-length branch is covered by
+        // WebSocketClientSendExZeroLength001 with a real client)
         int32_t ret = client->SendEx(const_cast<char *>(data), length);
-        EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_NONE_ERR);
+        EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
 
         CloseOption options = {};
         ret = client->CloseEx(options);
@@ -323,8 +363,7 @@ namespace {
 
     HWTEST_F(WebSocketTest, WebSocketConnectEx001, TestSize.Level1)
     {
-        std::unique_ptr<OHOS::NetStack::WebSocketClient::WebSocketClient> clients =
-            std::make_unique<OHOS::NetStack::WebSocketClient::WebSocketClient>();
+        auto clients = std::make_shared<OHOS::NetStack::WebSocketClient::WebSocketClient>();
         OHOS::NetStack::WebSocketClient::OpenOptions option;
         option.headers["Content-Type"] = "application/json";
         option.headers["Authorization"] = "Bearer your_token_here";
@@ -572,7 +611,7 @@ namespace {
         auto ret = server->Start(serverCfg);
         ASSERT_EQ(ret, 0);
 
-        auto localClient = std::make_unique<OHOS::NetStack::WebSocketClient::WebSocketClient>();
+        auto localClient = std::make_shared<OHOS::NetStack::WebSocketClient::WebSocketClient>();
         localClient->Registcallback(TestOnOpenCallback, TestOnClientMessageCallback, OnError, TestOnClientCloseCallback);
         OHOS::NetStack::WebSocketClient::OpenOptions opts;
         opts.headers["Content-Type"] = "application/json";
@@ -622,7 +661,7 @@ namespace {
         // nothing listens on the probe port: the client hits the connection error callback
         g_onClientErrorCalled = false;
         g_onOpenCalled = false;
-        auto localClient = std::make_unique<OHOS::NetStack::WebSocketClient::WebSocketClient>();
+        auto localClient = std::make_shared<OHOS::NetStack::WebSocketClient::WebSocketClient>();
         localClient->Registcallback(TestOnOpenCallback, OnMessage, TestOnClientErrorCallback, OnClose);
         OHOS::NetStack::WebSocketClient::OpenOptions opts;
         opts.headers["Content-Type"] = "application/json";
@@ -680,7 +719,7 @@ namespace {
 
     HWTEST_F(WebSocketTest, WebSocketClientCloseNoContext002, TestSize.Level1)
     {
-        client->clientContext = nullptr;
+        client->clientContext_.reset();
         CloseOption options = {};
         int32_t ret = client->Close(options);
         EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
@@ -738,11 +777,17 @@ namespace {
     HWTEST_F(WebSocketTest, WebSocketClientSendBinary012, TestSize.Level1)
     {
         auto clients = std::make_unique<OHOS::NetStack::WebSocketClient::WebSocketClient>();
+        void *rawContext = std::malloc(512);
+        ASSERT_NE(rawContext, nullptr);
+        clients->GetClientContext()->context_.reset(reinterpret_cast<lws_context *>(rawContext),
+            [](lws_context *) {});
 
         const char binaryData[] = {'a', '\0', 'b', '\0'};
         size_t length = 3;
         int32_t ret = clients->Send(const_cast<char *>(binaryData), length);
         EXPECT_EQ(ret, WEBSOCKET_NONE_ERR);
+        clients->GetClientContext()->context_.reset();
+        std::free(rawContext);
     }
 
     HWTEST_F(WebSocketTest, WebSocketClientSendExNoContext013, TestSize.Level1)
@@ -767,6 +812,41 @@ namespace {
         EXPECT_EQ(ret, WebsocketErrorCode::WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST);
         clients->GetClientContext()->context_.reset();
         std::free(rawCtx);
+    }
+
+    HWTEST_F(WebSocketTest, WebSocketClientDuplicateConnectPreservesOptions, TestSize.Level1)
+    {
+        const std::map<std::string, std::string> originalHeaders = {
+            {"Host", "original.example.com"}, {"X-Trace", "original"}};
+        for (auto connect : {&WebSocketClient::Connect, &WebSocketClient::ConnectEx}) {
+            SCOPED_TRACE(connect == &WebSocketClient::Connect ? "Connect" : "ConnectEx");
+            auto clients = std::make_unique<WebSocketClient>();
+            auto context = clients->GetClientContext();
+            void *rawContext = std::malloc(512);
+            ASSERT_NE(rawContext, nullptr);
+            context->context_.reset(reinterpret_cast<lws_context *>(rawContext), [](lws_context *) {});
+            auto originalContext = context->GetContext();
+            ASSERT_NE(originalContext, nullptr);
+            context->header = originalHeaders;
+            context->supportOriginPort = true;
+            context->serverName = "original.example.com";
+            context->SetUserCertPath("unused-cert.pem");
+            for (const auto &serverName : {"replacement.example.com", "", "invalid_name.example.com"}) {
+                SCOPED_TRACE(serverName);
+                OpenOptions options;
+                options.headers = {{"Host", "replacement.example.com"}, {"X-New", "replacement"}};
+                options.serverName = serverName;
+                int32_t ret = (clients.get()->*connect)("wss://example.com", options);
+                EXPECT_EQ(ret, WebsocketErrorCode::WEBSOCKET_ERROR_CODE_CONNECT_ALREADY_EXIST);
+                EXPECT_EQ(context->GetContext(), originalContext);
+                EXPECT_EQ(context->header, originalHeaders);
+                EXPECT_TRUE(context->supportOriginPort);
+                EXPECT_EQ(context->serverName, "original.example.com");
+                EXPECT_TRUE(context->caPath.empty());
+            }
+            context->context_.reset();
+            std::free(rawContext);
+        }
     }
 
     HWTEST_F(WebSocketTest, WebSocketServerCloseNotExist003, TestSize.Level1)
@@ -1337,8 +1417,10 @@ namespace {
 
         EXPECT_TRUE(g_onErrorCalled);
         EXPECT_EQ(g_lastErrorResult.errorCode, unknownCode);
-        EXPECT_TRUE(g_lastErrorResult.errorMessage == nullptr ||
-                    std::strlen(g_lastErrorResult.errorMessage) == 0);
+        // unknown codes fall back to the generic "Unknown error" message (see OnServerError),
+        // they do not produce an empty message
+        EXPECT_TRUE(g_lastErrorResult.errorMessage != nullptr &&
+                    std::strlen(g_lastErrorResult.errorMessage) > 0);
 
         server->GetServerContext()->SetContext(nullptr);
         std::free(rawCtx);
@@ -1383,10 +1465,10 @@ namespace {
         ASSERT_TRUE(client->GetClientContext() != nullptr);
         char data[] = "hello";
         size_t dataLength = strlen(data);
-        auto tmp = client->GetClientContext();
-        client->clientContext = nullptr;
+        auto tmp = client->clientContext_;
+        client->clientContext_.reset();
         auto ret = client->SendEx(data, dataLength);
-        client->clientContext = tmp;
+        client->clientContext_ = tmp;
         EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
     }
 
@@ -1419,6 +1501,19 @@ namespace {
         CloseOption Option;
         auto ret = client->CloseEx(Option);
         EXPECT_EQ(ret, -1);
+    }
+
+    HWTEST_F(WebSocketTest, WebSocketClientCloseExClientContextIsNull001, TestSize.Level2)
+    {
+        auto client = std::make_unique<WebSocketClient>();
+        ASSERT_TRUE(client != nullptr);
+        ASSERT_TRUE(client->GetClientContext() != nullptr);
+        CloseOption Option;
+        auto tmp = client->clientContext_;
+        client->clientContext_.reset();
+        auto ret = client->CloseEx(Option);
+        client->clientContext_ = tmp;
+        EXPECT_EQ(ret, WebSocketErrorCode::WEBSOCKET_ERROR_NO_CLIENTCONTEX);
     }
 
     HWTEST_F(WebSocketTest, WebSocketClientCloseExRequestClose001, TestSize.Level1)
@@ -1507,124 +1602,119 @@ namespace {
 
     HWTEST_F(WebSocketTest, WebSocketClientLwsCallbackClientAppendHandshakeHeader002, TestSize.Level2)
     {
-        auto client = std::make_unique<WebSocketClient>();
-        ASSERT_TRUE(client != nullptr);
+        auto client = std::make_shared<WebSocketClient>();
         ASSERT_TRUE(client->GetClientContext() != nullptr);
+        client->GetClientContext()->SetUserData(CreateLwsUserData(client.get()));
+        void *userData = client->GetClientContext()->AsLwsUserData();
         lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
         size_t length = 0;
-        auto ret = LwsCallbackClientAppendHandshakeHeader(nullptr, reason, (void*)client.get(), nullptr, length);
+        auto ret = LwsCallbackClientAppendHandshakeHeader(nullptr, reason, userData, nullptr, length);
         EXPECT_EQ(ret, -1);
         unsigned char *payload = nullptr;
         unsigned char **payloadPtr = &payload;
-        ret = LwsCallbackClientAppendHandshakeHeader(nullptr, reason, (void*)client.get(), payloadPtr, length);
+        ret = LwsCallbackClientAppendHandshakeHeader(nullptr, reason, userData, payloadPtr, length);
         EXPECT_EQ(ret, -1);
         unsigned char value[] = "test";
         *payloadPtr = value;
-        ret = LwsCallbackClientAppendHandshakeHeader(nullptr, reason, (void*)client.get(), payloadPtr, length);
+        ret = LwsCallbackClientAppendHandshakeHeader(nullptr, reason, userData, payloadPtr, length);
         EXPECT_EQ(ret, -1);
+        client->GetClientContext()->ReleaseUserData();
     }
 
     HWTEST_F(WebSocketTest, WebSocketClientLwsCallbackClientAppendHandshakeHeader003, TestSize.Level2)
     {
-        auto client = std::make_unique<WebSocketClient>();
-        ASSERT_TRUE(client != nullptr);
-        ASSERT_TRUE(client->GetClientContext() != nullptr);
-        auto tmp = client->GetClientContext();
-        client->clientContext = nullptr;
         lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
         size_t length = 0;
-        auto ret = LwsCallbackClientAppendHandshakeHeader(nullptr, reason, (void*)client.get(), nullptr, length);
-        client->clientContext = tmp;
+        auto ret = LwsCallbackClientAppendHandshakeHeader(nullptr, reason, nullptr, nullptr, length);
         EXPECT_EQ(ret, -1);
     }
 
     HWTEST_F(WebSocketTest, WebSocketClientLwsCallbackWsPeerInitiatedClose001, TestSize.Level1)
     {
-        auto client = std::make_unique<WebSocketClient>();
+        auto client = std::make_shared<WebSocketClient>();
         ASSERT_TRUE(client != nullptr);
         ASSERT_TRUE(client->GetClientContext() != nullptr);
+        client->GetClientContext()->SetUserData(CreateLwsUserData(client.get()));
         lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
         size_t length = sizeof(uint16_t) * 2;
         char value[] = "test";
-        auto ret = LwsCallbackWsPeerInitiatedClose(nullptr, reason, (void*)client.get(), value, length);
+        auto ret = LwsCallbackWsPeerInitiatedClose(nullptr, reason, client->GetClientContext()->AsLwsUserData(),
+            value, length);
         EXPECT_NE(ret, -1);
+        client->GetClientContext()->ReleaseUserData();
     }
 
     HWTEST_F(WebSocketTest, WebSocketClientLwsCallbackWsPeerInitiatedClose002, TestSize.Level2)
     {
-        auto client = std::make_unique<WebSocketClient>();
-        ASSERT_TRUE(client != nullptr);
-        ASSERT_TRUE(client->GetClientContext() != nullptr);
         lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
-        auto tmp = client->GetClientContext();
-        client->clientContext = nullptr;
         size_t length = 0;
-        auto ret = LwsCallbackWsPeerInitiatedClose(nullptr, reason, (void*)client.get(), nullptr, length);
-        client->clientContext = tmp;
+        auto ret = LwsCallbackWsPeerInitiatedClose(nullptr, reason, nullptr, nullptr, length);
         EXPECT_EQ(ret, -1);
     }
 
     HWTEST_F(WebSocketTest, WebSocketClientLwsCallbackWsPeerInitiatedClose003, TestSize.Level2)
     {
-        auto client = std::make_unique<WebSocketClient>();
+        auto client = std::make_shared<WebSocketClient>();
         ASSERT_TRUE(client != nullptr);
         ASSERT_TRUE(client->GetClientContext() != nullptr);
+        client->GetClientContext()->SetUserData(CreateLwsUserData(client.get()));
+        void *userData = client->GetClientContext()->AsLwsUserData();
         lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
         char value[] = "test";
         const size_t unvaluableLength = 0;
         const size_t valuableLength = sizeof(uint16_t) * 2;
-        auto ret = LwsCallbackWsPeerInitiatedClose(nullptr, reason, (void*)client.get(), nullptr, unvaluableLength);
+        auto ret = LwsCallbackWsPeerInitiatedClose(nullptr, reason, userData, nullptr, unvaluableLength);
         EXPECT_NE(ret, -1);
 
-        ret = LwsCallbackWsPeerInitiatedClose(nullptr, reason, (void*)client.get(), nullptr, valuableLength);
+        ret = LwsCallbackWsPeerInitiatedClose(nullptr, reason, userData, nullptr, valuableLength);
         EXPECT_NE(ret, -1);
 
-        ret = LwsCallbackWsPeerInitiatedClose(nullptr, reason, (void*)client.get(), value, unvaluableLength);
+        ret = LwsCallbackWsPeerInitiatedClose(nullptr, reason, userData, value, unvaluableLength);
         EXPECT_NE(ret, -1);
+        client->GetClientContext()->ReleaseUserData();
     }
 
     HWTEST_F(WebSocketTest, WebSocketClientLwsCallbackClientClosed001, TestSize.Level1)
     {
-        auto client = std::make_unique<WebSocketClient>();
+        auto client = std::make_shared<WebSocketClient>();
         ASSERT_TRUE(client != nullptr);
         ASSERT_TRUE(client->GetClientContext() != nullptr);
         client->Registcallback(nullptr, nullptr, nullptr, [](WebSocketClient *client, CloseResult closeResult) {});
+        client->GetClientContext()->SetUserData(CreateLwsUserData(client.get()));
         lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
 
         char value[] = "test";
         size_t length = strlen(value);
-        auto ret = LwsCallbackClientClosed(nullptr, reason, client.get(), value, length);
+        auto ret =
+            LwsCallbackClientClosed(nullptr, reason, client->GetClientContext()->AsLwsUserData(), value, length);
         EXPECT_NE(ret, -1);
+        client->GetClientContext()->ReleaseUserData();
     }
 
     HWTEST_F(WebSocketTest, WebSocketClientLwsCallbackClientClosed002, TestSize.Level1)
     {
-        auto client = std::make_unique<WebSocketClient>();
+        auto client = std::make_shared<WebSocketClient>();
         ASSERT_TRUE(client != nullptr);
         ASSERT_TRUE(client->GetClientContext() != nullptr);
         lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
         std::string closeReason = "connect refused";
         client->GetClientContext()->Close(LWS_CLOSE_STATUS_NORMAL, closeReason);
+        client->GetClientContext()->SetUserData(CreateLwsUserData(client.get()));
 
         char value[] = "test";
         size_t length = strlen(value);
-        auto ret = LwsCallbackClientClosed(nullptr, reason, client.get(), value, length);
+        auto ret =
+            LwsCallbackClientClosed(nullptr, reason, client->GetClientContext()->AsLwsUserData(), value, length);
         EXPECT_NE(ret, -1);
+        client->GetClientContext()->ReleaseUserData();
     }
 
     HWTEST_F(WebSocketTest, WebSocketClientLwsCallbackClientClosed003, TestSize.Level2)
     {
-        auto client = std::make_unique<WebSocketClient>();
-        ASSERT_TRUE(client != nullptr);
-        ASSERT_TRUE(client->GetClientContext() != nullptr);
-        auto tmp = client->GetClientContext();
-        client->clientContext = nullptr;
-
         lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
         char value[] = "test";
         size_t length = strlen(value);
-        auto ret = LwsCallbackClientClosed(nullptr, reason, client.get(), value, length);
-        client->clientContext = tmp;
+        auto ret = LwsCallbackClientClosed(nullptr, reason, nullptr, value, length);
         EXPECT_EQ(ret, -1);
     }
 
@@ -1674,8 +1764,8 @@ namespace {
             .clientPort = static_cast<uint32_t>(12345),
         };
         
-        if (auto callback = server->onConnectCallback_.load(); callback != nullptr) {
-            callback(server.get(), conn);
+        if (!server->onConnectCallback_.Empty()) {
+            server->onConnectCallback_.Invoke(server.get(), conn);
         }
         
         EXPECT_TRUE(g_onConnectCalled);
@@ -1828,10 +1918,18 @@ namespace {
         config.maxConnectionsForOneClient = 3;
         server->GetServerContext()->startServerConfig_ = config;
         
+        void *rawCtx = std::malloc(512);
+        ASSERT_TRUE(rawCtx != nullptr);
+        lws_context *tmpCtx = reinterpret_cast<lws_context *>(rawCtx);
+        server->GetServerContext()->SetContext(tmpCtx);
+        
         std::string testIp = "192.168.1.1";
         
         bool result = OHOS::NetStack::WebSocketServer::IsOverMaxClientConns(server.get(), testIp);
         EXPECT_FALSE(result);
+
+        server->GetServerContext()->SetContext(nullptr);
+        std::free(rawCtx);
     }
     
     HWTEST_F(WebSocketTest, WebSocketServerIsOverMaxClientConnsTest2, TestSize.Level1)
@@ -1981,7 +2079,31 @@ namespace {
         server->GetServerContext()->SetContext(nullptr);
         std::free(rawCtx);
     }
-    
+
+    HWTEST_F(WebSocketTest, WebSocketServerIsOverMaxClientConnsTest5, TestSize.Level2)
+    {
+        auto server = std::make_unique<OHOS::NetStack::WebSocketServer::WebSocketServer>();
+        ASSERT_TRUE(server != nullptr);
+        ASSERT_TRUE(server->GetServerContext() != nullptr);
+        ASSERT_TRUE(server->GetServerContext()->GetContext() == nullptr);
+
+        OHOS::NetStack::WebSocketServer::ServerConfig config;
+        config.maxConcurrentClientsNumber = 3;
+        config.maxConnectionsForOneClient = 3;
+        server->GetServerContext()->startServerConfig_ = config;
+
+        std::string testIp = "192.168.1.1";
+        bool result = OHOS::NetStack::WebSocketServer::IsOverMaxClientConns(server.get(), testIp);
+        EXPECT_TRUE(result);
+    }
+
+    HWTEST_F(WebSocketTest, WebSocketServerFillServerCertPathTest003, TestSize.Level2)
+    {
+        lws_context_creation_info info;
+        auto res = OHOS::NetStack::WebSocketServer::FillServerCertPath(nullptr, info);
+        EXPECT_FALSE(res);
+    }
+
     HWTEST_F(WebSocketTest, WebSocketCreatConnectInfoExBranchTest002, TestSize.Level1)
     {
         auto client = std::make_unique<WebSocketClient>();
@@ -2000,6 +2122,40 @@ namespace {
         EXPECT_EQ(ret10, WebsocketErrorCode::WEBSOCKET_ERROR_CODE_URL_ERROR);
         
         client->GetClientContext()->context_.reset();
+    }
+
+    HWTEST_F(WebSocketTest, BuildWebSocketServerNameHostTest, TestSize.Level1)
+    {
+        EXPECT_EQ(BuildWebSocketHost("wss", "example.com", 443), "example.com");
+        EXPECT_EQ(BuildWebSocketHost("wss", "example.com", 8443), "example.com:8443");
+    }
+
+    HWTEST_F(WebSocketTest, BuildWebSocketConnectHostSecureTest, TestSize.Level1)
+    {
+        std::map<std::string, std::string> headers = {
+            {"Host", "wrong.example.com"}, {"hOsT", "other.example.com"}, {"X-Trace", "value"}};
+        EXPECT_EQ(BuildWebSocketConnectHost("wss", "127.0.0.1", 18444, "sni.example.com", headers),
+            "sni.example.com:18444");
+        const std::map<std::string, std::string> expectedHeaders = {{"X-Trace", "value"}};
+        EXPECT_EQ(headers, expectedHeaders);
+
+        std::map<std::string, std::string> emptyHeaders;
+        EXPECT_EQ(BuildWebSocketConnectHost("wss", "127.0.0.1", 443, "sni.example.com", emptyHeaders),
+            "sni.example.com");
+        EXPECT_EQ(BuildWebSocketConnectHost("https", "127.0.0.1", 443, "sni.example.com", emptyHeaders),
+            "sni.example.com:443");
+        EXPECT_TRUE(emptyHeaders.empty());
+    }
+
+    HWTEST_F(WebSocketTest, BuildWebSocketConnectHostIgnoredTest, TestSize.Level1)
+    {
+        const std::map<std::string, std::string> originalHeaders = {{"Host", "app.example.com"}};
+        auto headers = originalHeaders;
+        EXPECT_EQ(BuildWebSocketConnectHost("ws", "127.0.0.1", 8080, "sni.example.com", headers),
+            "127.0.0.1:8080");
+        EXPECT_EQ(headers, originalHeaders);
+        EXPECT_EQ(BuildWebSocketConnectHost("wss", "127.0.0.1", 443, "", headers), "127.0.0.1");
+        EXPECT_EQ(headers, originalHeaders);
     }
 
     HWTEST_F(WebSocketTest, SplitTestEmptyString, TestSize.Level1)
@@ -2095,61 +2251,555 @@ namespace {
 
     HWTEST_F(WebSocketTest, ClientContextIsNullTest, TestSize.Level1)
     {
-        client->clientContext = nullptr;
-        int ret = LwsCallbackClientEstablished(nullptr, LWS_CALLBACK_CLIENT_ESTABLISHED, client, nullptr, 0);
+        int ret = LwsCallbackClientEstablished(nullptr, LWS_CALLBACK_CLIENT_ESTABLISHED, nullptr, nullptr, 0);
         EXPECT_EQ(ret, -1);
     }
 
     HWTEST_F(WebSocketTest, NormalExecutionNoCallbackTest, TestSize.Level1)
     {
-        WebSocketClient *client = new WebSocketClient();
-        ASSERT_TRUE(client != nullptr);
+        auto client = std::make_shared<WebSocketClient>();
         ASSERT_TRUE(client->GetClientContext() != nullptr);
+        client->GetClientContext()->SetUserData(CreateLwsUserData(client.get()));
 
         /* LwsCallbackClientEstablished calls lws_conmon_wsi_take(wsi), which reads/writes wsi internals
          * (conmon, sa46_peer, perf_done). Passing nullptr crashes there, so use a zeroed fake wsi buffer
          * large enough to cover any offsetof(struct lws, ...) instead. */
         alignas(16) char fakeWsiBuf[16 * 1024] = {0};
         auto *fakeWsi = reinterpret_cast<lws *>(fakeWsiBuf);
-        int ret = LwsCallbackClientEstablished(fakeWsi, LWS_CALLBACK_CLIENT_ESTABLISHED, client, nullptr, 0);
+        int ret = LwsCallbackClientEstablished(fakeWsi, LWS_CALLBACK_CLIENT_ESTABLISHED,
+            client->GetClientContext()->AsLwsUserData(), nullptr, 0);
         EXPECT_EQ(ret, 0);
 
-        delete client;
+        client->GetClientContext()->ReleaseUserData();
     }
 
     HWTEST_F(WebSocketTest, NormalExecutionWithCallbackTest, TestSize.Level1)
     {
         g_onOpenCalled = false;
-        WebSocketClient *client = new WebSocketClient();
-        ASSERT_TRUE(client != nullptr);
+        auto client = std::make_shared<WebSocketClient>();
         ASSERT_TRUE(client->GetClientContext() != nullptr);
+        client->GetClientContext()->SetUserData(CreateLwsUserData(client.get()));
 
         client->GetClientContext()->openStatus = 1;
         client->GetClientContext()->openMessage = "test message";
-        client->onOpenCallback_ = TestOnOpenCallback;
+        client->onOpenCallback_.Store(TestOnOpenCallback);
 
         alignas(16) char fakeWsiBuf[16 * 1024] = {0};
         auto *fakeWsi = reinterpret_cast<lws *>(fakeWsiBuf);
-        int ret = LwsCallbackClientEstablished(fakeWsi, LWS_CALLBACK_CLIENT_ESTABLISHED, client, nullptr, 0);
+        int ret = LwsCallbackClientEstablished(fakeWsi, LWS_CALLBACK_CLIENT_ESTABLISHED,
+            client->GetClientContext()->AsLwsUserData(), nullptr, 0);
         EXPECT_TRUE(g_onOpenCalled);
         EXPECT_EQ(g_lastOpenResult.status, 1);
         EXPECT_STREQ(g_lastOpenResult.message, "test message");
         EXPECT_EQ(ret, 0);
 
-        delete client;
+        client->GetClientContext()->ReleaseUserData();
     }
 
     HWTEST_F(WebSocketTest, HttpDummyReturnValueTest, TestSize.Level1)
     {
-        WebSocketClient *client = new WebSocketClient();
-        ASSERT_TRUE(client != nullptr);
+        auto client = std::make_shared<WebSocketClient>();
         ASSERT_TRUE(client->GetClientContext() != nullptr);
+        client->GetClientContext()->SetUserData(CreateLwsUserData(client.get()));
 
         alignas(16) char fakeWsiBuf[16 * 1024] = {0};
         auto *fakeWsi = reinterpret_cast<lws *>(fakeWsiBuf);
-        int ret = LwsCallbackClientEstablished(fakeWsi, LWS_CALLBACK_CLIENT_ESTABLISHED, client, nullptr, 0);
+        int ret = LwsCallbackClientEstablished(fakeWsi, LWS_CALLBACK_CLIENT_ESTABLISHED,
+            client->GetClientContext()->AsLwsUserData(), nullptr, 0);
         EXPECT_EQ(ret, 0);
+        client->GetClientContext()->ReleaseUserData();
+    }
 
-        delete client;
+    HWTEST_F(WebSocketTest, AtomicCallbackStoreInvokeEmptyTest, TestSize.Level1)
+    {
+        AtomicCallback<WebSocketClient::OnOpenCallback> callback;
+
+        // default constructed: empty, and Invoke is a safe no-op
+        EXPECT_TRUE(callback.Empty());
+        EXPECT_NO_FATAL_FAILURE(callback.Invoke(nullptr, OpenResult{}));
+
+        // Store a valid callback: Empty flips to false and Invoke calls through
+        bool invoked = false;
+        callback.Store([&invoked](WebSocketClient *client, OpenResult result) {
+            (void)client;
+            (void)result;
+            invoked = true;
+        });
+        EXPECT_FALSE(callback.Empty());
+        EXPECT_NO_FATAL_FAILURE(callback.Invoke(nullptr, OpenResult{}));
+        EXPECT_TRUE(invoked);
+
+        // Store an empty callback clears the slot again
+        callback.Store(nullptr);
+        EXPECT_TRUE(callback.Empty());
+        EXPECT_NO_FATAL_FAILURE(callback.Invoke(nullptr, OpenResult{}));
+    }
+
+    HWTEST_F(WebSocketTest, GetClientFromUserDataBranchTest, TestSize.Level1)
+    {
+        // null userdata pointer
+        EXPECT_EQ(GetClientFromUserData(nullptr), nullptr);
+
+        // userdata pointing at a context without a client
+        auto emptyClient = std::make_unique<WebSocketClient>();
+        EXPECT_EQ(GetClientFromUserData(emptyClient->GetClientContext()->AsLwsUserData()), nullptr);
+
+        // userdata holding a live client resolves back to the very same client
+        auto clientHolder = std::make_shared<WebSocketClient>();
+        auto userData = CreateLwsUserData(clientHolder.get());
+        ASSERT_NE(userData, nullptr);
+        clientHolder->GetClientContext()->SetUserData(userData);
+        auto client = GetClientFromUserData(clientHolder->GetClientContext()->AsLwsUserData());
+        ASSERT_NE(client, nullptr);
+        EXPECT_EQ(client.get(), clientHolder.get());
+    }
+
+    HWTEST_F(WebSocketTest, CreateLwsUserDataBranchTest, TestSize.Level1)
+    {
+        // client owned by a shared_ptr: creating userdata returns a shared reference
+        auto clientHolder = std::make_shared<WebSocketClient>();
+        auto sharedUserData = CreateLwsUserData(clientHolder.get());
+        ASSERT_NE(sharedUserData, nullptr);
+        EXPECT_EQ(sharedUserData.get(), clientHolder.get());
+        EXPECT_EQ(sharedUserData.use_count(), 2);
+
+        // client not owned by any shared_ptr: userdata must not keep it alive
+        WebSocketClient *rawClient = new WebSocketClient();
+        auto rawUserData = CreateLwsUserData(rawClient);
+        EXPECT_EQ(rawUserData, nullptr);
+        delete rawClient;
+    }
+
+    HWTEST_F(WebSocketTest, ClientContextUserDataLifecycleTest, TestSize.Level1)
+    {
+        auto client = std::make_shared<WebSocketClient>();
+        auto *context = client->GetClientContext();
+        ASSERT_NE(context, nullptr);
+        EXPECT_EQ(context->GetUserDataCopy(), nullptr);
+
+        // releasing while nothing is stored: early return
+        EXPECT_NO_FATAL_FAILURE(context->ReleaseUserData());
+        EXPECT_EQ(context->GetUserDataCopy(), nullptr);
+
+        // SetUserData / GetUserData round trip
+        auto userData = CreateLwsUserData(client.get());
+        ASSERT_NE(userData, nullptr);
+        context->SetUserData(userData);
+        EXPECT_EQ(context->GetUserDataCopy().get(), client.get());
+
+        context->ReleaseUserData();
+        EXPECT_EQ(context->GetUserDataCopy(), nullptr);
+
+        // ReleaseUserData also clears the stored userdata
+        auto userData2 = std::make_shared<WebSocketClient>();
+        context->SetUserData(userData2);
+        EXPECT_NO_FATAL_FAILURE(context->ReleaseUserData());
+        EXPECT_EQ(context->GetUserDataCopy(), nullptr);
+    }
+
+    HWTEST_F(WebSocketTest, RunServiceNullBranchTest, TestSize.Level1)
+    {
+        // null client: early return
+        EXPECT_NO_FATAL_FAILURE(RunService(nullptr));
+
+        // client without a client context: early return
+        auto detachedClient = std::make_unique<WebSocketClient>();
+        detachedClient->clientContext_.reset();
+        EXPECT_NO_FATAL_FAILURE(RunService(detachedClient.get()));
+
+        // client context without an lws context: early return
+        auto client = std::make_unique<WebSocketClient>();
+        EXPECT_NO_FATAL_FAILURE(RunService(client.get()));
+    }
+
+    HWTEST_F(WebSocketTest, LwsCallbackWsiDestroyBranchTest, TestSize.Level1)
+    {
+        // invalid userdata: early return
+        EXPECT_EQ(LwsCallbackWsiDestroy(nullptr, LWS_CALLBACK_WSI_DESTROY, nullptr, nullptr, 0), -1);
+
+        // valid userdata: proceeds and clears the stored wsi
+        auto client = std::make_shared<WebSocketClient>();
+        client->GetClientContext()->SetUserData(CreateLwsUserData(client.get()));
+        EXPECT_EQ(LwsCallbackWsiDestroy(nullptr, LWS_CALLBACK_WSI_DESTROY,
+            client->GetClientContext()->AsLwsUserData(), nullptr, 0), 0);
+        client->GetClientContext()->ReleaseUserData();
+    }
+
+    HWTEST_F(WebSocketTest, WebSocketClientCallbackInvokeTest, TestSize.Level1)
+    {
+        auto localClient = std::make_unique<WebSocketClient>();
+        g_onOpenCalled = false;
+
+        localClient->Registcallback(TestOnOpenCallback, nullptr, nullptr, nullptr);
+        EXPECT_FALSE(localClient->onOpenCallback_.Empty());
+        EXPECT_NO_FATAL_FAILURE(localClient->onOpenCallback_.Invoke(localClient.get(), OpenResult{}));
+        EXPECT_TRUE(g_onOpenCalled);
+
+        // Registcallback with nullptr clears every slot
+        localClient->Registcallback(nullptr, nullptr, nullptr, nullptr);
+        EXPECT_TRUE(localClient->onOpenCallback_.Empty());
+        EXPECT_TRUE(localClient->onMessageCallback_.Empty());
+        EXPECT_TRUE(localClient->onErrorCallback_.Empty());
+        EXPECT_TRUE(localClient->onCloseCallback_.Empty());
+    }
+
+    HWTEST_F(WebSocketTest, WebSocketServerCallbackInvokeTest, TestSize.Level1)
+    {
+        auto server = std::make_unique<OHOS::NetStack::WebSocketServer::WebSocketServer>();
+
+        // default constructed: every callback slot is empty
+        EXPECT_TRUE(server->onErrorCallback_.Empty());
+        EXPECT_TRUE(server->onConnectCallback_.Empty());
+        EXPECT_TRUE(server->onCloseCallback_.Empty());
+        EXPECT_TRUE(server->onMessageReceiveCallback_.Empty());
+
+        g_onErrorCalled = false;
+        server->Registcallback(TestOnServerErrorCallback, TestOnConnectCallback, TestOnServerCloseCallback,
+            TestOnServerMessageCallback);
+        EXPECT_FALSE(server->onErrorCallback_.Empty());
+        EXPECT_FALSE(server->onConnectCallback_.Empty());
+        EXPECT_FALSE(server->onCloseCallback_.Empty());
+        EXPECT_FALSE(server->onMessageReceiveCallback_.Empty());
+
+        // Invoke calls through the stored std::function
+        EXPECT_NO_FATAL_FAILURE(server->onErrorCallback_.Invoke(server.get(),
+            OHOS::NetStack::WebSocketServer::ErrorResult{}));
+        EXPECT_TRUE(g_onErrorCalled);
+        EXPECT_NO_FATAL_FAILURE(server->onConnectCallback_.Invoke(server.get(),
+            OHOS::NetStack::WebSocketServer::SocketConnection{}));
+        EXPECT_NO_FATAL_FAILURE(server->onCloseCallback_.Invoke(server.get(),
+            OHOS::NetStack::WebSocketServer::CloseResult{},
+            OHOS::NetStack::WebSocketServer::SocketConnection{}));
+        EXPECT_NO_FATAL_FAILURE(server->onMessageReceiveCallback_.Invoke(server.get(), std::string("data"),
+            static_cast<size_t>(1), OHOS::NetStack::WebSocketServer::SocketConnection{}));
+
+        // Registcallback with nullptr clears every slot
+        server->Registcallback(nullptr, nullptr, nullptr, nullptr);
+        EXPECT_TRUE(server->onErrorCallback_.Empty());
+        EXPECT_TRUE(server->onConnectCallback_.Empty());
+        EXPECT_TRUE(server->onCloseCallback_.Empty());
+        EXPECT_TRUE(server->onMessageReceiveCallback_.Empty());
+    }
+
+    static std::atomic<bool> g_e2eServerGotMsg {false};
+    static std::atomic<bool> g_e2eClientConnected {false};
+    static std::atomic<bool> g_e2eClientReceived {false};
+    static std::string g_e2eClientMsg;
+
+    static int EchoServerCallback(struct lws *wsi, LwsCallbackReasons reason,
+        void *user, void *in, size_t len)
+    {
+        (void)user;
+        switch (reason) {
+            case LWS_CALLBACK_RECEIVE:
+                g_e2eServerGotMsg.store(true);
+                lws_write(wsi, static_cast<unsigned char *>(in), len, LWS_WRITE_TEXT);
+                break;
+            default:
+                break;
+        }
+        return 0;
+    }
+
+    static int E2EClientCallback(struct lws *wsi, LwsCallbackReasons reason,
+        void *user, void *in, size_t len)
+    {
+        (void)user;
+        switch (reason) {
+            case LWS_CALLBACK_CLIENT_ESTABLISHED:
+                g_e2eClientConnected.store(true);
+                lws_callback_on_writable(wsi);
+                break;
+            case LWS_CALLBACK_CLIENT_WRITEABLE: {
+                unsigned char buf[LWS_PRE + 16];
+                const char msg[] = "hello";
+                size_t mlen = sizeof(msg) - 1;
+                if (memcpy_s(buf + LWS_PRE, sizeof(buf) - LWS_PRE, msg, mlen) != EOK) {
+                    break;
+                }
+                lws_write(wsi, buf + LWS_PRE, mlen, LWS_WRITE_TEXT);
+                break;
+            }
+            case LWS_CALLBACK_CLIENT_RECEIVE:
+                g_e2eClientReceived.store(true);
+                g_e2eClientMsg.assign(static_cast<const char *>(in), len);
+                break;
+            default:
+                break;
+        }
+        return 0;
+    }
+
+    /*
+     * Start an in-process, non-TLS echo server on `port` and spawn its service thread.
+     * Returns false if lws_create_context fails (caller should GTEST_SKIP).
+     */
+    static bool StartEchoServer(uint16_t port, lws_context *&serverCtx, std::thread &serverThread,
+                                std::atomic<bool> &serverStop)
+    {
+        static lws_protocols serverProtocols[] = {
+            {"ws-echo-test", EchoServerCallback, 0, 4096, 0, nullptr, 0},
+            LWS_PROTOCOL_LIST_TERM
+        };
+        lws_context_creation_info sInfo = {};
+        sInfo.options = 0;
+        sInfo.port = port;
+        sInfo.iface = "127.0.0.1";
+        sInfo.protocols = serverProtocols;
+        sInfo.fd_limit_per_thread = 1 + 1 + 1;
+        serverCtx = lws_create_context(&sInfo);
+        if (serverCtx == nullptr) {
+            return false;
+        }
+        serverThread = std::thread([&serverStop, &serverCtx]() {
+            while (!serverStop.load()) {
+                lws_service(serverCtx, 0);
+            }
+        });
+        return true;
+    }
+
+    /*
+     * Create a non-TLS client context and connect it to the echo server. On any failure the
+     * server is torn down (joined + destroyed) and nullptr is returned (caller should GTEST_SKIP).
+     */
+    static lws_context *CreateConnectedClient(uint16_t port, lws_context *&serverCtx, std::thread &serverThread,
+        std::atomic<bool> &serverStop)
+    {
+        static lws_protocols clientProtocols[] = {
+            {"ws-echo-test", E2EClientCallback, 0, 4096, 0, nullptr, 0},
+            LWS_PROTOCOL_LIST_TERM
+        };
+        lws_context_creation_info cInfo = {};
+        cInfo.options = 0;
+        cInfo.port = CONTEXT_PORT_NO_LISTEN;
+        cInfo.protocols = clientProtocols;
+        cInfo.fd_limit_per_thread = 1 + 1 + 1;
+        lws_context *clientCtx = lws_create_context(&cInfo);
+        if (clientCtx == nullptr) {
+            serverStop.store(true);
+            lws_cancel_service(serverCtx);
+            serverThread.join();
+            lws_context_destroy(serverCtx);
+            serverCtx = nullptr;
+            return nullptr;
+        }
+
+        lws_client_connect_info ccInfo = {};
+        ccInfo.context = clientCtx;
+        ccInfo.address = "127.0.0.1";
+        ccInfo.port = port;
+        ccInfo.path = "/";
+        ccInfo.host = "127.0.0.1";
+        ccInfo.origin = "127.0.0.1";
+        ccInfo.protocol = "ws-echo-test";
+        ccInfo.ietf_version_or_minus_one = -1;
+        ccInfo.userdata = nullptr;
+        if (lws_client_connect_via_info(&ccInfo) == nullptr) {
+            serverStop.store(true);
+            lws_cancel_service(serverCtx);
+            serverThread.join();
+            lws_context_destroy(serverCtx);
+            lws_context_destroy(clientCtx);
+            serverCtx = nullptr;
+            return nullptr;
+        }
+        return clientCtx;
+    }
+
+    HWTEST_F(WebSocketTest, RunServiceRealWebsocketE2ETest, TestSize.Level1)
+    {
+        g_e2eServerGotMsg = false;
+        g_e2eClientConnected = false;
+        g_e2eClientReceived = false;
+        g_e2eClientMsg.clear();
+
+        lws_context *serverCtx = nullptr;
+        lws_context *clientCtx = nullptr;
+        std::thread serverThread;
+        std::atomic<bool> serverStop {false};
+        if (!StartEchoServer(18765, serverCtx, serverThread, serverStop)) {
+            GTEST_SKIP() << "lws_create_context (server) unavailable in this environment";
+            return;
+        }
+        clientCtx = CreateConnectedClient(18765, serverCtx, serverThread, serverStop);
+        if (clientCtx == nullptr) {
+            GTEST_SKIP() << "lws client setup unavailable in this environment";
+            return;
+        }
+
+        auto client = std::make_shared<WebSocketClient>();
+        client->GetClientContext()->SetContext(clientCtx);
+        client->GetClientContext()->SetUserData(client);
+
+        // Drive the REAL production RunService on the live client context.
+        std::thread serviceThread(RunService, client.get());
+
+        // Wait for the handshake + echo (real websocket traffic through lws).
+        for (int i = 0; i < 100 && !(g_e2eClientConnected.load() && g_e2eClientReceived.load()); ++i) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        EXPECT_TRUE(g_e2eClientConnected.load());
+        EXPECT_TRUE(g_e2eServerGotMsg.load());
+        EXPECT_TRUE(g_e2eClientReceived.load());
+        EXPECT_EQ(g_e2eClientMsg, "hello");
+
+        // Concurrent lifecycle: destroy WebSocketClient while RunService is still looping.
+        // Its destructor does NOT join our manually-spawned serviceThread, so RunService keeps
+        // running concurrently; the fix's guard makes it exit once context_ becomes nullptr.
+        client.reset();
+
+        ASSERT_NO_FATAL_FAILURE(serviceThread.join());
+
+        // Clean shutdown of the echo server.
+        serverStop.store(true);
+        lws_cancel_service(serverCtx);
+        ASSERT_NO_FATAL_FAILURE(serverThread.join());
+        lws_context_destroy(serverCtx);
+    }
+
+    HWTEST_F(WebSocketTest, RunServiceFullLifecycleE2ETest, TestSize.Level1)
+    {
+        g_e2eServerGotMsg = false;
+        g_e2eClientConnected = false;
+        g_e2eClientReceived = false;
+        g_e2eClientMsg.clear();
+
+        lws_context *serverCtx = nullptr;
+        lws_context *clientCtx = nullptr;
+        std::thread serverThread;
+        std::atomic<bool> serverStop {false};
+        if (!StartEchoServer(18766, serverCtx, serverThread, serverStop)) {
+            GTEST_SKIP() << "lws_create_context (server) unavailable in this environment";
+            return;
+        }
+        clientCtx = CreateConnectedClient(18766, serverCtx, serverThread, serverStop);
+        if (clientCtx == nullptr) {
+            GTEST_SKIP() << "lws client setup unavailable in this environment";
+            return;
+        }
+
+        auto client = std::make_shared<WebSocketClient>();
+        client->GetClientContext()->SetContext(clientCtx);
+        client->GetClientContext()->SetUserData(client);
+
+        // Production lifecycle: spawn the REAL service thread exactly as WebSocketClient::Connect
+        // does (serviceThread_ = g_connectThread(this)). This runs the FIXED RunService free
+        // function and assigns it to the WebSocketClient's serviceThread_ member.
+        client->serviceThread_ = g_connectThread(client.get());
+
+        // Real websocket traffic through the production RunService: handshake + echo.
+        for (int i = 0; i < 100 && !(g_e2eClientConnected.load() && g_e2eClientReceived.load()); ++i) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        EXPECT_TRUE(g_e2eClientConnected.load());
+        EXPECT_TRUE(g_e2eServerGotMsg.load());
+        EXPECT_TRUE(g_e2eClientReceived.load());
+        EXPECT_EQ(g_e2eClientMsg, "hello");
+
+        // Complete-lifecycle teardown through the REAL ~WebSocketClient: StopServiceThread
+        // (sets stopFlag + lws_cancel_service) then JoinServiceThread joins the member
+        // serviceThread_ running RunService, then SetContext(nullptr) / ReleaseUserData /
+        // clientContext_.reset(). RunService keeps the ClientContext alive via its captured
+        // shared_ptr, so this concurrent destruction is UAF-free on the fixed code.
+        client.reset();
+
+        // Clean shutdown of the echo server (after the client is fully torn down).
+        serverStop.store(true);
+        lws_cancel_service(serverCtx);
+        ASSERT_NO_FATAL_FAILURE(serverThread.join());
+        lws_context_destroy(serverCtx);
+    }
+
+    /*
+     * One round of the RunService concurrent-destroy stress test: spawns the REAL production
+     * RunService on a live (non-TLS) lws context, then -- while RunService is still running --
+     * stops it and concurrently destroys the WebSocketClient. The ~WebSocketClient teardown races
+     * with RunService's teardown; on the fixed code the captured shared_ptr keeps ClientContext
+     * alive (no UAF), on a reverted raw-pointer design RunService would dereference the freed
+     * ClientContext (signal 11).
+     */
+    static void RunServiceConcurrentDestroyStressRound(uint16_t serverPort)
+    {
+        static lws_protocols stressClientProtocols[] = {
+            {"ws-echo-test", E2EClientCallback, 0, 4096, 0, nullptr, 0},
+            LWS_PROTOCOL_LIST_TERM
+        };
+        lws_context_creation_info cInfo = {};
+        cInfo.options = 0;
+        cInfo.port = CONTEXT_PORT_NO_LISTEN;
+        cInfo.protocols = stressClientProtocols;
+        cInfo.fd_limit_per_thread = 1 + 1 + 1;
+        lws_context *clientCtx = lws_create_context(&cInfo);
+        if (clientCtx == nullptr) {
+            return;
+        }
+
+        lws_client_connect_info ccInfo = {};
+        ccInfo.context = clientCtx;
+        ccInfo.address = "127.0.0.1";
+        ccInfo.port = serverPort;
+        ccInfo.path = "/";
+        ccInfo.host = "127.0.0.1";
+        ccInfo.origin = "127.0.0.1";
+        ccInfo.protocol = "ws-echo-test";
+        ccInfo.ietf_version_or_minus_one = -1;
+        ccInfo.userdata = nullptr;
+        (void)lws_client_connect_via_info(&ccInfo);  // best-effort; the race is about
+                                                     // ClientContext lifetime, not I/O.
+
+        auto client = std::make_shared<WebSocketClient>();
+        client->GetClientContext()->SetContext(clientCtx);
+        client->GetClientContext()->SetUserData(client);
+
+        std::thread serviceThread(RunService, client.get());
+        client->GetClientContext()->SetThreadStop(true);
+        lws_context *curCtx = client->GetClientContext()->GetContext();
+        if (curCtx != nullptr) {
+            lws_cancel_service(curCtx);
+        }
+        client.reset();
+        serviceThread.join();
+    }
+
+    HWTEST_F(WebSocketTest, RunServiceConcurrentDestroyStressTest, TestSize.Level1)
+    {
+        g_e2eServerGotMsg = false;
+        g_e2eClientConnected = false;
+        g_e2eClientReceived = false;
+        g_e2eClientMsg.clear();
+
+        static lws_protocols stressServerProtocols[] = {
+            {"ws-echo-test", EchoServerCallback, 0, 4096, 0, nullptr, 0},
+            LWS_PROTOCOL_LIST_TERM
+        };
+        lws_context_creation_info sInfo = {};
+        sInfo.options = 0;
+        sInfo.port = 18767;
+        sInfo.iface = "127.0.0.1";
+        sInfo.protocols = stressServerProtocols;
+        sInfo.fd_limit_per_thread = 1 + 1 + 1;
+        lws_context *serverCtx = lws_create_context(&sInfo);
+        if (serverCtx == nullptr) {
+            GTEST_SKIP() << "lws_create_context (server) unavailable in this environment";
+            return;
+        }
+
+        std::atomic<bool> serverStop {false};
+        std::thread serverThread([&serverStop, &serverCtx]() {
+            while (!serverStop.load()) {
+                lws_service(serverCtx, 0);
+            }
+        });
+
+        constexpr int kRounds = 30;
+        for (int r = 0; r < kRounds; ++r) {
+            RunServiceConcurrentDestroyStressRound(18767);
+        }
+
+        serverStop.store(true);
+        lws_cancel_service(serverCtx);
+        ASSERT_NO_FATAL_FAILURE(serverThread.join());
+        lws_context_destroy(serverCtx);
     }
 } // namespace

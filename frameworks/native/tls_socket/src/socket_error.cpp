@@ -14,6 +14,7 @@
  */
 
 #include "socket_error.h"
+#include "tls_cert_alias.h"
 
 #include <cstring>
 #include <map>
@@ -32,9 +33,10 @@ static constexpr const char *PERMISSION_DENIED_MSG = "Permission denied";
 static constexpr int32_t PARSE_ERROR_CODE = 401;
 static constexpr const char *PARSE_ERROR_MSG = "Parameter error";
 
-std::string MakeErrorMessage(int error)
+namespace {
+const std::map<int32_t, std::string> &GetErrorMap()
 {
-    static const std::map<int32_t, std::string> ERROR_MAP = {
+    static const std::map<int32_t, std::string> errorMap = {
         {PERMISSION_DENIED_CODE, PERMISSION_DENIED_MSG},
         {PARSE_ERROR_CODE, PARSE_ERROR_MSG},
         {SYSTEM_INTERNAL_ERROR, "System internal error"},
@@ -49,8 +51,11 @@ std::string MakeErrorMessage(int error)
         {TLS_ERR_SYS_EPROTOTYPE, "Incorrect socket protocol type"},
         {TLS_ERR_SYS_EADDRINUSE, "Address already in use"},
         {TLS_ERR_SYS_EADDRNOTAVAIL, "Address not available"},
+        {TLS_ERR_SYS_EISCONN, "Transport endpoint is already connected"},
         {TLS_ERR_SYS_ENOTCONN, "Transport endpoint is not connected"},
         {TLS_ERR_SYS_ETIMEDOUT, "Connection timed out"},
+        {TLS_ERR_SYS_EALREADY, "Operation already in progress"},
+        {TLS_ERR_SYS_ECANCELED, "Operation canceled"},
         {TLS_ERR_SSL_NULL, "SSL is null"},
         {TLS_ERR_WANT_READ, "An error occurred when reading data on the TLS socket"},
         {TLS_ERR_WANT_WRITE, "An error occurred when writing data on the TLS socket"},
@@ -65,9 +70,21 @@ std::string MakeErrorMessage(int error)
         {TLS_ERR_NO_BIND, "No bind socket"},
         {TLS_ERR_SOCK_INVALID_FD, "Invalid socket FD"},
         {TLS_ERR_SOCK_NOT_CONNECT, "Socket is not connected"},
+        {TLS_ALIAS_UNSUPPORTED, "Certificate alias capability is not supported"},
+        {TLS_ERR_CERT_ALIAS_NOT_FOUND, "Certificate alias not found or the certificate is unavailable"},
+        {TLS_ERR_CERT_MGR_SERVICE_ERROR, "Certificate manager service error"},
+        {TLS_ERR_KEY_ACCESS_DENIED, "Access to the private key of the alias is denied"},
+        {TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED, "SSL server hostname verification failed"},
     };
-    auto search = ERROR_MAP.find(error);
-    if (search != ERROR_MAP.end()) {
+    return errorMap;
+}
+} // namespace
+
+std::string MakeErrorMessage(int error)
+{
+    const auto &errorMap = GetErrorMap();
+    auto search = errorMap.find(error);
+    if (search != errorMap.end()) {
         return search->second;
     }
     if ((error % ERROR_DIVISOR) < ERROR_RANGE) {
@@ -80,8 +97,11 @@ std::string MakeErrorMessage(int error)
 
 std::string MakeSSLErrorString(int error)
 {
+    if (IsCertAliasError(error)) {
+        return MakeErrorMessage(error);
+    }
     char err[MAX_ERR_LEN] = {0};
-    ERR_error_string_n(error - TlsSocketError::TLS_ERR_SYS_BASE, err, sizeof(err));
+    ERR_error_string_n(error - TlsSocketError::TLS_ERR_SSL_BASE, err, sizeof(err));
     return err;
 }
 } // namespace TlsSocket

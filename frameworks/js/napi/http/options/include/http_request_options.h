@@ -190,6 +190,8 @@ public:
 
     void SetHeader(const std::string &key, const std::string &val);
 
+    void RemoveHeaderByKey(const std::string &key);
+
     void SetReadTimeout(uint32_t readTimeout);
 
     void SetMaxLimit(uint32_t maxLimit);
@@ -312,11 +314,25 @@ public:
 
     [[nodiscard]] const std::string &GetSniHostName() const;
 
+    void SetSslServerHostnameVerification(bool sslServerHostnameVerification);
+
+    [[nodiscard]] bool GetSslServerHostnameVerification() const;
+
+    void SetEnableCertRevocationCheck(bool enableCertRevocationCheck);
+
+    [[nodiscard]] bool GetEnableCertRevocationCheck() const;
+
     void SetReuseConnectionsFlag(bool reuseConnectionsFlag);
     [[nodiscard]] const bool &GetReuseConnectionsFlag() const;
 
     void SetInactivityMs(int inactivityMs);
     [[nodiscard]] int GetInactivityMs() const;
+
+    void SetLowSpeedLimit(uint32_t lowSpeedLimit);
+    [[nodiscard]] uint32_t GetLowSpeedLimit() const;
+
+    void SetLowSpeedTime(uint32_t lowSpeedTime);
+    [[nodiscard]] uint32_t GetLowSpeedTime() const;
 
     void SetSocks5Proxy(const std::string &host, int32_t port,
         const NapiUtils::SecureData &username, const NapiUtils::SecureData &password,
@@ -328,6 +344,9 @@ public:
 
     void SetEnableAutoCookie(bool enableAutoCookie);
     [[nodiscard]] bool GetEnableAutoCookie() const;
+
+    void SetFollowRedirectPostToGet(bool followRedirectPostToGet);
+    [[nodiscard]] bool GetFollowRedirectPostToGet() const;
 
 private:
     std::string url_;
@@ -392,6 +411,8 @@ private:
 
     bool canSkipCertVerify_ = false;
 
+    bool enableCertRevocationCheck_ = false;
+
     int partialChain_ = -1; // -1: not set, 0: false, 1: true
 
     std::vector<MultiFormData> multiFormDataList_;
@@ -417,9 +438,15 @@ private:
 
     std::string sniHostName_;
 
+    bool sslServerHostnameVerification_ = true;
+
     bool reuseConnectionsFlag_ = true;
 
     int inactivityMs_ = 0;
+
+    uint32_t lowSpeedLimit_ = 0;
+
+    uint32_t lowSpeedTime_ = 0;
 
     std::string socks5ProxyHost_;
     int32_t socks5ProxyPort_ = 0;
@@ -429,6 +456,7 @@ private:
     std::string socks5ProxyExclusionList_;
 
     bool enableAutoCookie_ = false;
+    bool followRedirectPostToGet_ = false;
 };
 } // namespace OHOS::NetStack::Http
 

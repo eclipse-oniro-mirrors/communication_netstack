@@ -353,7 +353,12 @@ bool HttpInterceptorMgr::HasEnabledInterceptor(OH_Interceptor_Stage stage)
     std::shared_lock<std::shared_mutex> lock(stage == OH_STAGE_REQUEST ? reqMutex_ : respMutex_);
     auto &targetList = stage == OH_STAGE_REQUEST ? requestInterceptorList_ : responseInterceptorList_;
     auto iter = std::find_if(targetList.begin(), targetList.end(), [&](const OH_Http_Interceptor *item) {
-        return item->enabled == 1;
+        // LCOV_EXCL_START
+        if (item == nullptr) {
+            return false;
+        }
+        // LCOV_EXCL_STOP
+        return item->enabled != 0;
     });
     if (iter == targetList.end()) {
         NETSTACK_LOGD("interceptor not exist");
@@ -395,6 +400,11 @@ void HttpInterceptorMgr::ConvertStringToRawPtr(const std::string &str, Http_Buff
     out.buffer = buffer;
 }
 
+static bool HasHeaderControlChar(const std::string &s)
+{
+    return s.find('\0') != std::string::npos || s.find_first_of("\r\n") != std::string::npos;
+}
+
 curl_slist *HttpInterceptorMgr::CurlParseHeaderRawPtr(
     const std::shared_ptr<std::unordered_map<std::string, std::vector<std::string>>> &headers)
 {
@@ -403,7 +413,15 @@ curl_slist *HttpInterceptorMgr::CurlParseHeaderRawPtr(
     }
     curl_slist *curlHeader = nullptr;
     for (const auto &[key, valueVec] : *headers) {
+        if (key.empty() || HasHeaderControlChar(key)) {
+            NETSTACK_LOGE("invalid header key, skip");
+            continue;
+        }
         for (const auto &value : valueVec) {
+            if (HasHeaderControlChar(value)) {
+                NETSTACK_LOGE("invalid header value, skip");
+                continue;
+            }
             std::string s;
             s.append(key).append(": ").append(value);
             struct curl_slist *newEntry = curl_slist_append(curlHeader, s.c_str());

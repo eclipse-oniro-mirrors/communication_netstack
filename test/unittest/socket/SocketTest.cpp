@@ -292,7 +292,8 @@ HWTEST_F(SocketTest, LocalSocketTest004, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     LocalSocketCloseContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketClose(&context);
-    EXPECT_EQ(ret, false);
+    // closing a socket that was never created is treated as "already closed": success
+    EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(SocketTest, LocalSocketTest005, TestSize.Level1)
@@ -319,7 +320,8 @@ HWTEST_F(SocketTest, LocalSocketTest007, TestSize.Level1)
     auto eventManager = std::make_shared<EventManager>();
     LocalSocketSetExtraOptionsContext context(env, eventManager);
     bool ret = LocalSocketExec::ExecLocalSocketSetExtraOptions(&context);
-    EXPECT_EQ(ret, true);
+    // the socket was never created: GetSocketFd() < 0 fails the dup() validation with EBADF
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(SocketTest, LocalSocketTest008, TestSize.Level1)
@@ -493,6 +495,9 @@ HWTEST_F(SocketTest, LocalSocketServerManagerTest001, TestSize.Level1)
     LocalSocketServerManager mgr;
     ASSERT_GE(mgr.StartEpoll(), 0);
     ASSERT_GE(mgr.stopEventFd_, 0);
+    // StartEpoll only creates the stop eventfd: it must be registered in epoll before EpollWait,
+    // exactly like the production server loop does (local_socket_exec.cpp)
+    ASSERT_EQ(mgr.RegisterEpollEvent(mgr.stopEventFd_, EPOLLIN), 0);
 
     int sv[2] = {-1, -1};
     ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
@@ -528,6 +533,9 @@ HWTEST_F(SocketTest, LocalSocketServerManagerTest001, TestSize.Level1)
 
     int sv2[2] = {-1, -1};
     ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv2), 0);
+    // the fd number of the closed sv[0] may be recycled as sv2[0] (lowest free fd), in which case
+    // the reported event belongs to sv2 and cannot be attributed to the stale fd
+    int staleFd = sv[0];
     ASSERT_EQ(mgr.RegisterEpollEvent(sv2[0], EPOLLIN), 0);
     ASSERT_EQ(write(sv2[1], "z", 1), 1);
     bool staleReported = false;
@@ -535,7 +543,7 @@ HWTEST_F(SocketTest, LocalSocketServerManagerTest001, TestSize.Level1)
     n = mgr.EpollWait();
     ASSERT_GE(n, 0);
     for (int i = 0; i < n; ++i) {
-        if (mgr.events_[i].data.fd == sv[0]) {
+        if (mgr.events_[i].data.fd == staleFd && staleFd != sv2[0]) {
             staleReported = true;
         }
         if (mgr.events_[i].data.fd == sv2[0]) {
@@ -1737,6 +1745,37 @@ HWTEST_F(SocketTest, Socks5UtilsRecvInvalidFdTest004, TestSize.Level1)
     auto ret = Socks5Utils::Recv(fd, nullptr, 0); // not a socket fd
     EXPECT_FALSE(ret.first);
     close(fd);
+}
+
+/* ==================== fdsan 双关修复：ExecClose 按属主销号 ==================== */
+
+HWTEST_F(SocketTest, ExecCloseNormalPathTest012, TestSize.Level1)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    auto eventManager = std::make_shared<EventManager>();
+    eventManager->SetSocketFd(fds[0]);
+    CloseContext context(nullptr, eventManager);
+    EXPECT_TRUE(SocketExec::ExecClose(&context));
+    /* 正常路径：属主销号成功后才 close，关闭后登记本必须为空 */
+    EXPECT_EQ(fcntl(fds[0], F_GETFD), -1);
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    close(fds[1]);
+}
+
+HWTEST_F(SocketTest, ExecCloseStaleFdNoResetTest013, TestSize.Level1)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    auto eventManager = std::make_shared<EventManager>();
+    eventManager->SetSocketFd(fds[0]);
+    /* 模拟：fd 已被其他路径关闭，但登记本还留着旧号（修复前的残留状态） */
+    close(fds[0]);
+    CloseContext context(nullptr, eventManager);
+    EXPECT_FALSE(SocketExec::ExecClose(&context));
+    /* 修复点：close 失败路径也必须完成销号，不能把作废的 fd 号留在登记本里被再次 close */
+    EXPECT_EQ(eventManager->GetSocketFd(), -1);
+    close(fds[1]);
 }
 
 } // namespace

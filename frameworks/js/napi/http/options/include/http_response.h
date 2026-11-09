@@ -73,6 +73,8 @@ public:
 
     void SetExtraInfoItem(const std::string &key, const std::string &value);
 
+    void SetCacheHitBytesToZero();
+
     std::string GetExtraInfoItem(const std::string &key, const std::string &defaultValue = "") const;
 
     bool isApplyBlockRedirectionInterceptor_ = false;

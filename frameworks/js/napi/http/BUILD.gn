@@ -54,6 +54,8 @@ config("http_config") {
       "-D_FORTIFY_SOURCE=2",
       "-O2",
     ]
+  } else if (is_linux) {
+    defines += [ "LINUX_PLATFORM" ]
   } else if (product_name != "ohos-sdk") {
     defines += [ "HTTP_PROXY_ENABLE" ]
     cflags_cc = [
@@ -76,7 +78,7 @@ config("http_config") {
 
 ohos_shared_library("http") {
   defines = []
-  if (!is_mingw && !is_mac && current_os != "ios" && host_os != "mac" &&
+  if (!is_mingw && !is_mac && !is_linux && current_os != "ios" && host_os != "mac" &&
       current_os != "mac" && current_os != "android") {
     defines += [ "USE_ARES" ]
   }
@@ -120,7 +122,7 @@ ohos_shared_library("http") {
 
   configs = [ ":http_config" ]
 
-  if (is_mingw || is_mac) {
+  if (is_mingw || is_mac || is_linux) {
     sources += [
       "$NETSTACK_DIR/utils/common_utils/src/netstack_common_utils.cpp",
       "$NETSTACK_DIR/utils/common_utils/src/request_tracer.cpp",
@@ -140,6 +142,16 @@ ohos_shared_library("http") {
       "$NETSTACK_DIR/utils/napi_utils:napi_utils",
       "$NETSTACK_DIR/interfaces/innerkits/http_interceptor:http_interceptor",
     ]
+    if (product_name != "ohos-sdk") {
+      if (netstack_http_boringssl) {
+        sources += [ "$NETSTACK_NATIVE_ROOT/net_ssl/cert_chain_verify_helper.cpp" ]
+        include_dirs += [ "$NETSTACK_DIR/interfaces/innerkits/net_ssl/include" ]
+        configs += [ "//vendor/open_source/boringssl:boringssl_config" ]
+        defines += [ "NETSTACK_CERT_CHAIN_BORINGSSL" ]
+      } else {
+        deps += [ "$NETSTACK_DIR/interfaces/innerkits/net_ssl:net_ssl" ]
+      }
+    }
     external_deps = [
       "ability_base:configuration",
       "ability_runtime:wantagent_innerkits",
@@ -202,7 +214,11 @@ ohos_shared_library("http") {
       ]
     }
     if (product_name != "ohos-sdk") {
-      external_deps += [ "init:libbegetutil" ]
+      external_deps += [
+        "certificate_framework:certificate_framework_core",
+        "init:libbegetutil",
+      ]
+      defines += [ "HTTP_CERT_REVOCATION_ENABLE" ]
     }
   }
   if (!build_ohos_sdk) {

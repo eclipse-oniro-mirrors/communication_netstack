@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <charconv>
 #include "http_cache_response.h"
 
 #include "casche_constant.h"
@@ -129,8 +128,7 @@ bool HttpCacheResponse::String2Time(const std::string &age, time_t &output) cons
     if (age.empty()) {
         return false;
     }
-    auto [ptr, ec] = std::from_chars(age.data(), age.data() + age.size(), output, DECIMAL);
-    return (ec == std::errc{}) && (ptr == age.data() + age.size());
+    return CommonUtils::ParseDecimalInteger(age, output);
 }
 
 time_t HttpCacheResponse::GetAgeSeconds() const

@@ -152,6 +152,8 @@ public:
     static const char *const PARAM_KEY_RESUME_FROM;
     static const char *const PARAM_KEY_RESUME_TO;
     static const char *const PARAM_KEY_CONNECT_TIMEOUT;
+    static const char *const PARAM_KEY_LOW_SPEED_LIMIT;
+    static const char *const PARAM_KEY_LOW_SPEED_TIME;
     static const char *const PARAM_KEY_USING_PROTOCOL;
     static const char *const PARAM_KEY_USING_CACHE;
     static const char *const PARAM_KEY_EXPECT_DATA_TYPE;
@@ -161,6 +163,8 @@ public:
     static const char *const PARAM_KEY_DOH_URL;
     static const char *const PARAM_KEY_MAX_REDIRECTS;
     static const char *const PARAM_KEY_SNI_HOSTNAME;
+    static const char *const PARAM_KEY_SSL_SERVER_HOSTNAME_VERIFICATION;
+    static const char *const PARAM_KEY_FOLLOW_REDIRECT_POST_TO_GET;
 
     static const char *const PARAM_KEY_USING_HTTP_PROXY;
     static const char *const PARAM_KEY_CLIENT_CERT;
@@ -170,6 +174,7 @@ public:
     static const char *const PARAM_KEY_TLS_OPTION;
     static const char *const PARAM_KEY_SERVER_AUTH;
     static const char *const PARAM_KEY_ADDRESS_FAMILY;
+    static const char *const PARAM_KEY_ENABLE_CERT_REVOCATION_CHECK;
 
     static const char *const HTTP_PROXY_KEY_HOST;
     static const char *const HTTP_PROXY_KEY_PORT;
@@ -284,6 +289,8 @@ public:
     static const char *const PARAM_KEY_IS_PROXY_CONNECTION;
     static const char *const PARAM_KEY_IS_CACHE_HIT;
     static const char *const PARAM_KEY_REDIRECT_COUNT;
+    static const char *const PARAM_KEY_SENT_TOTAL_BYTES;
+    static const char *const PARAM_KEY_RECEIVED_TOTAL_BYTES;
 
     static const char *const PARAM_KEY_ENABLE_AUTO_COOKIE;
 };

@@ -161,8 +161,8 @@ pub struct TCPSendOptions {
 
 #[ani_rs::ani(path = "@ohos.net.socket.socket.SocketLingerOptionsInner")]
 pub struct SocketLingerOptions {
-    pub on: bool,
-    pub linger: i32,
+    pub on: Option<bool>,
+    pub linger: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -190,6 +190,7 @@ pub struct TCPExtraOptions {
 
 #[ani_rs::ani(path = "@ohos.net.socket.socket.TLSSecureOptionsInner")]
 pub struct TLSSecureOptions {
+    pub cert_alias: Option<String>,
     pub ca: Option<UnionCaCert>,
     pub cert: Option<UnionCaCert>,
     pub key: Option<String>,
@@ -214,8 +215,12 @@ pub struct TLSConnectOptions {
     pub skip_remote_validation: Option<bool>,
     #[serde(rename = "proxy\0")]
     pub proxy: Option<ProxyOptions>,
+    #[serde(rename = "sslServerHostnameVerification\0")]
+    pub ssl_server_hostname_verification: Option<bool>,
     #[serde(rename = "timeout\0")]
     pub timeout: Option<i32>,
+    #[serde(rename = "serverName\0")]
+    pub server_name: Option<String>,
 }
 
 #[ani_rs::ani(path = "@ohos.net.socket.socket.SocketMessageInfoInner")]

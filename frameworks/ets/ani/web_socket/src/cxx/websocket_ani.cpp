@@ -21,6 +21,7 @@
 #include <memory>
 #include <map>
 #include <shared_mutex>
+#include "client_context.h"
 
 namespace OHOS {
 namespace NetStackAni {
@@ -54,6 +55,7 @@ int32_t Connect(WebSocketClientWrapper &client, const rust::str url, AniConnectO
 {
     NetStack::WebSocketClient::OpenOptions openOptions;
     openOptions.supportOriginPort = options.supportOriginPort;
+    openOptions.serverName = std::string(options.serverName);
     bool isValue = false;
     std::string key;
     std::string value;
@@ -204,85 +206,85 @@ void OnHeaderReceiveCallbackC(NetStack::WebSocketClient::WebSocketClient *client
 
 int32_t RegisterOpenCallback(WebSocketClientWrapper &client)
 {
-    client.client->onOpenCallback_ = &OnOpenCallbackC;
+    client.client->onOpenCallback_.Store(&OnOpenCallbackC);
     return 0;
 }
 
 int32_t RegisterMessageCallback(WebSocketClientWrapper &client)
 {
-    client.client->onMessageCallback_ = &OnMessageCallbackC;
+    client.client->onMessageCallback_.Store(&OnMessageCallbackC);
     return 0;
 }
 
 int32_t RegisterCloseCallback(WebSocketClientWrapper &client)
 {
-    client.client->onCloseCallback_ = &OnCloseCallbackC;
+    client.client->onCloseCallback_.Store(&OnCloseCallbackC);
     return 0;
 }
 
 int32_t RegisterErrorCallback(WebSocketClientWrapper &client)
 {
-    client.client->onErrorCallback_ = &OnErrorCallbackC;
+    client.client->onErrorCallback_.Store(&OnErrorCallbackC);
     return 0;
 }
 
 int32_t RegisterDataEndCallback(WebSocketClientWrapper &client)
 {
-    client.client->onDataEndCallback_ = &OnDataEndCallbackC;
+    client.client->onDataEndCallback_.Store(&OnDataEndCallbackC);
     return 0;
 }
 
 int32_t RegisterHeaderReceiveCallback(WebSocketClientWrapper &client)
 {
-    client.client->onHeaderReceiveCallback_ = &OnHeaderReceiveCallbackC;
+    client.client->onHeaderReceiveCallback_.Store(&OnHeaderReceiveCallbackC);
     return 0;
 }
 
 int32_t UnregisterOpenCallback(WebSocketClientWrapper &client)
 {
-    client.client->onOpenCallback_ = nullptr;
+    client.client->onOpenCallback_.Store(nullptr);
     return 0;
 }
 
 int32_t UnregisterMessageCallback(WebSocketClientWrapper &client)
 {
-    client.client->onMessageCallback_ = nullptr;
+    client.client->onMessageCallback_.Store(nullptr);
     return 0;
 }
 
 int32_t UnregisterCloseCallback(WebSocketClientWrapper &client)
 {
-    client.client->onCloseCallback_ = nullptr;
+    client.client->onCloseCallback_.Store(nullptr);
     return 0;
 }
 
 int32_t UnregisterHeaderReceiveCallback(WebSocketClientWrapper &client)
 {
-    client.client->onHeaderReceiveCallback_ = nullptr;
+    client.client->onHeaderReceiveCallback_.Store(nullptr);
     return 0;
 }
 
 int32_t UnregisterErrorCallback(WebSocketClientWrapper &client)
 {
-    client.client->onErrorCallback_ = nullptr;
+    client.client->onErrorCallback_.Store(nullptr);
     return 0;
 }
 
 int32_t UnregisterDataEndCallback(WebSocketClientWrapper &client)
 {
-    client.client->onDataEndCallback_ = nullptr;
+    client.client->onDataEndCallback_.Store(nullptr);
     return 0;
 }
 
 int32_t RegisterOpenInfoCallback(WebSocketClientWrapper &client)
 {
-    client.client->onOpenInfoCallback_ = &OnOpenInfoCallbackC;
+    client.client->onOpenInfoCallback_.Store(&OnOpenInfoCallbackC);
     return 0;
 }
 
 int32_t UnregisterOpenInfoCallback(WebSocketClientWrapper &client)
 {
-    client.client->onOpenInfoCallback_ = nullptr;
+    client.client->onOpenInfoCallback_.Store(nullptr);
     return 0;
 }
 
@@ -397,49 +399,49 @@ void OnMessageReceiveCallbackServerC(NetStack::WebSocketServer::WebSocketServer 
 
 int32_t RegisterServerErrorCallback(NetStack::WebSocketServer::WebSocketServer &server)
 {
-    server.onErrorCallback_ = &OnErrorCallbackServerC;
+    server.onErrorCallback_.Store(&OnErrorCallbackServerC);
     return 0;
 }
 
 int32_t RegisterServerConnectCallback(NetStack::WebSocketServer::WebSocketServer &server)
 {
-    server.onConnectCallback_ = &OnConnectCallbackServerC;
+    server.onConnectCallback_.Store(&OnConnectCallbackServerC);
     return 0;
 }
 
 int32_t RegisterServerCloseCallback(NetStack::WebSocketServer::WebSocketServer &server)
 {
-    server.onCloseCallback_ = &OnCloseCallbackServerC;
+    server.onCloseCallback_.Store(&OnCloseCallbackServerC);
     return 0;
 }
 
 int32_t RegisterServerMessageReceiveCallback(NetStack::WebSocketServer::WebSocketServer &server)
 {
-    server.onMessageReceiveCallback_ = &OnMessageReceiveCallbackServerC;
+    server.onMessageReceiveCallback_.Store(OnMessageReceiveCallbackServerC);
     return 0;
 }
 
 int32_t UnregisterServerErrorCallback(NetStack::WebSocketServer::WebSocketServer &server)
 {
-    server.onErrorCallback_ = nullptr;
+    server.onErrorCallback_.Store(nullptr);
     return 0;
 }
 
 int32_t UnregisterServerConnectCallback(NetStack::WebSocketServer::WebSocketServer &server)
 {
-    server.onConnectCallback_ = nullptr;
+    server.onConnectCallback_.Store(nullptr);
     return 0;
 }
 
 int32_t UnregisterServerCloseCallback(NetStack::WebSocketServer::WebSocketServer &server)
 {
-    server.onCloseCallback_ = nullptr;
+    server.onCloseCallback_.Store(nullptr);
     return 0;
 }
 
 int32_t UnregisterServerMessageReceiveCallback(NetStack::WebSocketServer::WebSocketServer &server)
 {
-    server.onMessageReceiveCallback_ = nullptr;
+    server.onMessageReceiveCallback_.Store(nullptr);
     return 0;
 }
 } // namespace NetStackAni

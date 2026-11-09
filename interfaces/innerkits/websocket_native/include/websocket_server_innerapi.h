@@ -21,6 +21,7 @@
 #include <mutex>
 #include <thread>
 #include "server_context.h"
+#include "atomic_callback.h"
 
 namespace OHOS {
 namespace NetStack {
@@ -30,11 +31,11 @@ class WebSocketServer {
 public:
     WebSocketServer();
     ~WebSocketServer();
-    typedef void (*OnErrorCallback)(WebSocketServer *server, ErrorResult error);
-    typedef void (*OnConnectCallback)(WebSocketServer *server, SocketConnection connection);
-    typedef void (*OnCloseCallback)(WebSocketServer *server, CloseResult result, SocketConnection connection);
-    typedef void (*OnMessageReceiveCallback)(WebSocketServer *server, const std::string &data,
-                                             size_t length, SocketConnection connection);
+    using OnErrorCallback = std::function<void(WebSocketServer *server, ErrorResult)>;
+    using OnConnectCallback = std::function<void(WebSocketServer *server, SocketConnection)>;
+    using OnCloseCallback = std::function<void(WebSocketServer *server, CloseResult, SocketConnection)>;
+    using OnMessageReceiveCallback =
+        std::function<void(WebSocketServer *server, const std::string &, size_t, SocketConnection)>;
 
     int Start(const ServerConfig &config);
     int Stop();
@@ -48,10 +49,10 @@ public:
     int Registcallback(OnErrorCallback onError, OnConnectCallback onConnect,
         OnCloseCallback onClose, OnMessageReceiveCallback onMessageReceive);
 
-    std::atomic<OnErrorCallback> onErrorCallback_{nullptr};
-    std::atomic<OnConnectCallback> onConnectCallback_{nullptr};
-    std::atomic<OnCloseCallback> onCloseCallback_{nullptr};
-    std::atomic<OnMessageReceiveCallback> onMessageReceiveCallback_{nullptr};
+    AtomicCallback<OnErrorCallback> onErrorCallback_;
+    AtomicCallback<OnConnectCallback> onConnectCallback_;
+    AtomicCallback<OnCloseCallback> onCloseCallback_;
+    AtomicCallback<OnMessageReceiveCallback> onMessageReceiveCallback_;
 
 private:
     ServerContext *serverContext_ = nullptr;

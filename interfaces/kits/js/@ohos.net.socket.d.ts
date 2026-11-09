@@ -3303,6 +3303,8 @@ declare namespace socket {
     /**
      * Sets up a connection to the specified IP address and port number.
      * Only TCP is supported.
+     * Requires ohos.permission.ACCESS_CERT_MANAGER when secureOptions.certAlias is set.
+     *
      * @param { TLSConnectOptions } options - Optional parameters {@link TLSConnectOptions}.
      * @param { AsyncCallback<void> } callback - the callback of connect.
      * @throws { BusinessError } 401 - Parameter error.
@@ -3320,6 +3322,11 @@ declare namespace socket {
      * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 201 - Permission denied, including ACCESS_CERT_MANAGER for alias use. [since 26.2.0]
+     * @throws { BusinessError } 801 - Certificate alias backend is not supported. [since 26.2.0]
+     * @throws { BusinessError } 2303604 - Certificate alias not found or the certificate is unavailable. [since 26.2.0]
+     * @throws { BusinessError } 2303605 - Certificate manager service error. [since 26.2.0]
+     * @throws { BusinessError } 2303606 - Access to the private key of the alias is denied. [since 26.2.0]
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
      * @since 10
@@ -3352,6 +3359,8 @@ declare namespace socket {
     /**
      * Sets up a connection to the specified IP address and port number.
      * Only TCP is supported.
+     * Requires ohos.permission.ACCESS_CERT_MANAGER when secureOptions.certAlias is set.
+     *
      * @param { TLSConnectOptions } options - Optional parameters {@link TLSConnectOptions}.
      * @returns { Promise<void> } The promise returned by the function.
      * @throws { BusinessError } 401 - Parameter error.
@@ -3369,6 +3378,11 @@ declare namespace socket {
      * @throws { BusinessError } 2303505 - An error occurred in the TLS system call.
      * @throws { BusinessError } 2303506 - Failed to close the TLS connection.
      * @throws { BusinessError } 2300002 - System internal error.
+     * @throws { BusinessError } 201 - Permission denied, including ACCESS_CERT_MANAGER for alias use. [since 26.2.0]
+     * @throws { BusinessError } 801 - Certificate alias backend is not supported. [since 26.2.0]
+     * @throws { BusinessError } 2303604 - Certificate alias not found or the certificate is unavailable. [since 26.2.0]
+     * @throws { BusinessError } 2303605 - Certificate manager service error. [since 26.2.0]
+     * @throws { BusinessError } 2303606 - Access to the private key of the alias is denied. [since 26.2.0]
      * @syscap SystemCapability.Communication.NetStack
      * @crossplatform
      * @since 10
@@ -3526,6 +3540,22 @@ declare namespace socket {
    * @since 10
    */
   export interface TLSSecureOptions {
+    /**
+     * Alias of a private client credential owned by the calling application. When set, cert, key and
+     * password are ignored. Private key operations use certificate management without exporting the key.
+     * Requires ohos.permission.ACCESS_CERT_MANAGER only when this property is set. Undefined uses the
+     * existing credential path and permissions. Accepts 1 to 256 UTF-8 bytes of ASCII 0x20-0x7E with at
+     * least one non-space character. Matching is case-sensitive and preserves spaces.
+     * Client only: servers reject this property with error 401. Platforms without the backend return 801.
+     *
+     * @type {?string}
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @since 26.2.0 dynamic&static
+     */
+    certAlias?: string;
+
     /**
      * Certificate used to verify the identity of the server
      * @type {string | Array<string>}
@@ -3741,6 +3771,20 @@ declare namespace socket {
     proxy?: ProxyOptions;
 
     /**
+     * The host name required for SSL server host name verification.
+     * The default value of sslServerHostnameVerify is true. When sslServerHostnameVerification is set to false,
+     * domain name verification is disabled.
+     * In this scenario, the certificate domain name verification is ignored when the IP address is used for connection.
+     * Default value: true.
+     *
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @since 26.2.0 dynamic&static
+     */
+    sslServerHostnameVerification?: boolean;
+
+    /**
      * Timeout duration of the TLSSocket connetion, in milliseconds.
      * @type {?int}
      * @syscap SystemCapability.Communication.NetStack
@@ -3749,6 +3793,23 @@ declare namespace socket {
      * @arkts 1.2
      */
     timeout?: int;
+
+    /**
+     * Server Name Indication (SNI) service name used by the TLS handshake. This parameter is optional.
+     * In the IP direct connection scenario, the service domain name can be explicitly specified as the SNI.
+     * If this field is not set, the SNI is automatically filled with the domain name of the destination address.
+     * When sslServerHostnameVerification is true, a valid serverName is used for server hostname verification.
+     * If this field is omitted or invalid, verification uses the original destination address when enabled.
+     * This field does not enable server hostname verification by itself.
+     * The maximum length is 253 bytes. Value constraint: Valid domain name. Default value: undefined.
+     * @type {?string}
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @since 26.2.0
+     * @arkts 1.2
+     */
+    serverName?: string;
   }
 
   /**

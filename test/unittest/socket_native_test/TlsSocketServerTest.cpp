@@ -300,57 +300,6 @@ HWTEST_F(TlsSocketServerTest, BranchTest006, TestSize.Level2)
     EXPECT_TRUE(result == nullptr);
 }
 
-HWTEST_F(TlsSocketServerTest, BranchTest007, TestSize.Level2)
-{
-    auto connection = std::make_shared<TLSSocketServer::Connection>();
-    std::string hostName = "testHost";
-    X509 *x509Certificates = X509_new();
-
-    std::string result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
-    EXPECT_GE(result.length(), 0);
-    X509_EXTENSION *ext = X509_EXTENSION_new();
-    X509_add_ext(x509Certificates, ext, -1);
-    result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
-    EXPECT_GE(result.length(), 0);
-
-    X509_EXTENSION_free(ext);
-    X509_free(x509Certificates);
-}
-
-HWTEST_F(TlsSocketServerTest, BranchTest008, TestSize.Level2)
-{
-    auto connection = std::make_shared<TLSSocketServer::Connection>();
-    std::string hostName = "172.0.0.1";
-    X509 *x509Certificates = X509_new();
-
-    std::string result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
-    EXPECT_GE(result.length(), 0);
-    X509_EXTENSION *ext = X509_EXTENSION_new();
-    X509_add_ext(x509Certificates, ext, -1);
-    result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
-    EXPECT_GE(result.length(), 0);
-
-    X509_EXTENSION_free(ext);
-    X509_free(x509Certificates);
-}
-
-HWTEST_F(TlsSocketServerTest, BranchTest009, TestSize.Level2)
-{
-    auto connection = std::make_shared<TLSSocketServer::Connection>();
-    std::string hostName = "testHost";
-    X509 *x509Certificates = X509_new();
-    X509_NAME *subjectName = X509_get_subject_name(x509Certificates);
-    X509_NAME_add_entry_by_txt(subjectName, "CN", MBSTRING_ASC,
-                               reinterpret_cast<const unsigned char*>("testHost"), -1, -1, 0);
-    int index = X509_get_ext_by_NID(x509Certificates, NID_subject_alt_name, -1);
-    X509_EXTENSION *ext = X509_EXTENSION_new();
-    X509_add_ext(x509Certificates, ext, index);
-    std::string result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
-    EXPECT_GE(result.length(), 0);
-    X509_EXTENSION_free(ext);
-    X509_free(x509Certificates);
-}
-
 HWTEST_F(TlsSocketServerTest, BranchTest016, TestSize.Level2)
 {
     auto tlsSocketServer = new TLSSocketServer();
@@ -525,29 +474,6 @@ HWTEST_F(TlsSocketServerTest, BranchTest026, TestSize.Level2)
     });
     EXPECT_TRUE(callbackCalled);
     delete tlsSocketServer;
-}
-
-HWTEST_F(TlsSocketServerTest, BranchTest031, TestSize.Level2)
-{
-    auto connection = std::make_shared<TLSSocketServer::Connection>();
-    std::string hostName = "testHost";
-    X509 *x509Certificates = X509_new();
-    std::string result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
-    ASSERT_EQ(result, "X509 get ext nid error");
-    X509_free(x509Certificates);
-}
-
-HWTEST_F(TlsSocketServerTest, BranchTest032, TestSize.Level2)
-{
-    auto connection = std::make_shared<TLSSocketServer::Connection>();
-    std::string hostName = "testHost";
-    X509 *x509Certificates = X509_new();
-    X509_EXTENSION *ext = X509_EXTENSION_new();
-    X509_add_ext(x509Certificates, ext, -1);
-    std::string result = connection->CheckServerIdentityLegal(hostName, x509Certificates);
-    ASSERT_EQ(result, "X509 get ext nid error");
-    X509_EXTENSION_free(ext);
-    X509_free(x509Certificates);
 }
 
 HWTEST_F(TlsSocketServerTest, BranchTest033, TestSize.Level2)

@@ -16,6 +16,8 @@
 
 #include "i_network_message.h"
 
+#include <algorithm>
+
 #include "netstack_common_utils.h"
 
 namespace OHOS::NetStack {

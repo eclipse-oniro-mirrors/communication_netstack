@@ -307,6 +307,49 @@ HWTEST_F(HttpRequestOptionsTest, SetReadTimeoutTest, TestSize.Level1)
     EXPECT_EQ(resultValue, testValue);
 }
 
+HWTEST_F(HttpRequestOptionsTest, LowSpeedOptionsTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    EXPECT_EQ(requestOptions.GetLowSpeedLimit(), 0);
+    EXPECT_EQ(requestOptions.GetLowSpeedTime(), 0);
+    EXPECT_STREQ(HttpConstant::PARAM_KEY_LOW_SPEED_LIMIT, "lowSpeedLimit");
+    EXPECT_STREQ(HttpConstant::PARAM_KEY_LOW_SPEED_TIME, "lowSpeedTime");
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetLowSpeedLimitTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    uint32_t testValue = 10240;
+    requestOptions.SetLowSpeedLimit(testValue);
+    EXPECT_EQ(requestOptions.GetLowSpeedLimit(), testValue);
+
+    requestOptions.SetLowSpeedLimit(1);
+    EXPECT_EQ(requestOptions.GetLowSpeedLimit(), 1);
+
+    requestOptions.SetLowSpeedLimit(INT32_MAX);
+    EXPECT_EQ(requestOptions.GetLowSpeedLimit(), static_cast<uint32_t>(INT32_MAX));
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetLowSpeedTimeTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    uint32_t testValue = 3000;
+    requestOptions.SetLowSpeedTime(testValue);
+    EXPECT_EQ(requestOptions.GetLowSpeedTime(), testValue);
+
+    requestOptions.SetLowSpeedTime(1000);
+    EXPECT_EQ(requestOptions.GetLowSpeedTime(), 1000);
+
+    requestOptions.SetLowSpeedTime(1);
+    EXPECT_EQ(requestOptions.GetLowSpeedTime(), 1);
+
+    requestOptions.SetLowSpeedTime(INT32_MAX);
+    EXPECT_EQ(requestOptions.GetLowSpeedTime(), static_cast<uint32_t>(INT32_MAX));
+}
+
 HWTEST_F(HttpRequestOptionsTest, SetHeaderTest, TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
@@ -492,6 +535,18 @@ HWTEST_F(HttpRequestOptionsTest, SniHostNameTest001, TestSize.Level1)
     EXPECT_NE(sniHostName, "Example.com");
 }
 
+HWTEST_F(HttpRequestOptionsTest, SslServerHostnameVerificationTest001, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    EXPECT_TRUE(requestOptions.GetSslServerHostnameVerification());
+
+    requestOptions.SetSslServerHostnameVerification(false);
+    EXPECT_FALSE(requestOptions.GetSslServerHostnameVerification());
+
+    requestOptions.SetSslServerHostnameVerification(true);
+    EXPECT_TRUE(requestOptions.GetSslServerHostnameVerification());
+}
+
 HWTEST_F(HttpRequestOptionsTest, SetPartialChainTest001, TestSize.Level1)
 {
     HttpRequestOptions requestOptions;
@@ -507,5 +562,150 @@ HWTEST_F(HttpRequestOptionsTest, SetPartialChainTest002, TestSize.Level1)
     requestOptions.SetPartialChain(true);
     int partialChain = requestOptions.GetPartialChain();
     EXPECT_EQ(partialChain, 1);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetFollowRedirectPostToGetTest001, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    requestOptions.SetFollowRedirectPostToGet(true);
+    bool followRedirectPostToGet = requestOptions.GetFollowRedirectPostToGet();
+    EXPECT_EQ(followRedirectPostToGet, true);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetFollowRedirectPostToGetTest002, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    requestOptions.SetFollowRedirectPostToGet(false);
+    bool followRedirectPostToGet = requestOptions.GetFollowRedirectPostToGet();
+    EXPECT_EQ(followRedirectPostToGet, false);
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetFollowRedirectPostToGetTest003, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    bool followRedirectPostToGet = requestOptions.GetFollowRedirectPostToGet();
+    // default value is false
+    EXPECT_EQ(followRedirectPostToGet, false);
+}
+
+HWTEST_F(HttpRequestOptionsTest, RemoveHeaderByKeyTest001, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    requestOptions.SetHeader("Content-Type", "application/json");
+    requestOptions.SetHeader("Content-Length", "1");
+    const std::string& value = requestOptions.GetHeader().at("Content-Type");
+    EXPECT_EQ(value, "application/json");
+
+    requestOptions.RemoveHeaderByKey("Content-Type");
+    EXPECT_EQ(requestOptions.GetHeader().find("Content-Type"), requestOptions.GetHeader().end());
+}
+
+HWTEST_F(HttpRequestOptionsTest, RemoveHeaderByKeyTest002, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    requestOptions.SetHeader("Content-Type", "application/json");
+    requestOptions.SetHeader("Content-Length", "1");
+    const std::string& value = requestOptions.GetHeader().at("Content-Length");
+    EXPECT_EQ(value, "1");
+
+    // Remove header by key with lower case key
+    requestOptions.RemoveHeaderByKey("content-type");
+    EXPECT_EQ(requestOptions.GetHeader().find("Content-Type"), requestOptions.GetHeader().end());
+    requestOptions.RemoveHeaderByKey("content-length");
+    EXPECT_EQ(requestOptions.GetHeader().find("Content-Length"), requestOptions.GetHeader().end());
+}
+
+HWTEST_F(HttpRequestOptionsTest, RemoveHeaderByKeyTest003, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    requestOptions.SetHeader("Content-Length", "1");
+    requestOptions.SetHeader("Content-Type", "application/json");
+    const std::string& value = requestOptions.GetHeader().at("Content-Length");
+    EXPECT_EQ(value, "1");
+    const std::string& value2 = requestOptions.GetHeader().at("Content-Type");
+    EXPECT_EQ(value2, "application/json");
+
+    // Remove header by key with upper case key
+    requestOptions.RemoveHeaderByKey("CONTENT-TYPE");
+    EXPECT_EQ(requestOptions.GetHeader().find("Content-Type"), requestOptions.GetHeader().end());
+    requestOptions.RemoveHeaderByKey("CONTENT-LENGTH");
+    EXPECT_EQ(requestOptions.GetHeader().find("Content-Length"), requestOptions.GetHeader().end());
+}
+
+HWTEST_F(HttpRequestOptionsTest, RemoveHeaderByKeyTest004, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    // Different-case duplicates must both be removed by one case-insensitive call.
+    requestOptions.SetHeader("Content-Type", "application/json");
+    requestOptions.SetHeader("content-type", "application/json");
+    requestOptions.SetHeader("Authorization", "Bearer x");
+
+    requestOptions.RemoveHeaderByKey("Content-Type");
+    EXPECT_EQ(requestOptions.GetHeader().find("Content-Type"), requestOptions.GetHeader().end());
+    EXPECT_EQ(requestOptions.GetHeader().find("content-type"), requestOptions.GetHeader().end());
+    // Unrelated headers are preserved.
+    EXPECT_NE(requestOptions.GetHeader().find("Authorization"), requestOptions.GetHeader().end());
+}
+
+HWTEST_F(HttpRequestOptionsTest, RemoveHeaderByKeyTest005, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    // Remove not exist header by key
+    requestOptions.RemoveHeaderByKey("Content-Type");
+    EXPECT_EQ(requestOptions.GetHeader().find("Content-Type"), requestOptions.GetHeader().end());
+}
+
+HWTEST_F(HttpRequestOptionsTest, RemoveHeaderByKeyTest006, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    requestOptions.SetHeader("Content-Length", "1");
+    requestOptions.SetHeader("Content-Type", "application/json");
+    const std::string& value = requestOptions.GetHeader().at("Content-Length");
+    EXPECT_EQ(value, "1");
+    const std::string& value2 = requestOptions.GetHeader().at("Content-Type");
+    EXPECT_EQ(value2, "application/json");
+
+    // Remove Content-Length
+    requestOptions.RemoveHeaderByKey("Content-Length");
+    EXPECT_EQ(requestOptions.GetHeader().find("Content-Length"), requestOptions.GetHeader().end());
+    
+    // Content-Type still exists
+    const std::string& valueType = requestOptions.GetHeader().at("Content-Type");
+    EXPECT_EQ(valueType, "application/json");
+}
+
+HWTEST_F(HttpRequestOptionsTest, SetFollowRedirectPostToGetDefaultTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    // Default must be false to keep backward-compatible behavior for existing apps.
+    EXPECT_FALSE(requestOptions.GetFollowRedirectPostToGet());
+}
+
+HWTEST_F(HttpRequestOptionsTest, RemoveHeaderByKeyEmptyKeyTest, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+    requestOptions.SetHeader("X-Foo", "bar");
+    requestOptions.RemoveHeaderByKey("");
+    EXPECT_NE(requestOptions.GetHeader().find("X-Foo"), requestOptions.GetHeader().end());
+}
+
+HWTEST_F(HttpRequestOptionsTest, EnableCertRevocationCheckTest001, TestSize.Level1)
+{
+    HttpRequestOptions requestOptions;
+
+    EXPECT_FALSE(requestOptions.GetEnableCertRevocationCheck());
+    requestOptions.SetEnableCertRevocationCheck(true);
+    EXPECT_TRUE(requestOptions.GetEnableCertRevocationCheck());
+    requestOptions.SetEnableCertRevocationCheck(false);
+    EXPECT_FALSE(requestOptions.GetEnableCertRevocationCheck());
 }
 } // namespace

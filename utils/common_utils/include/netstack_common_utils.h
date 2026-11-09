@@ -18,15 +18,23 @@
 
 #include <iosfwd>
 #include <list>
+#include <limits>
 #include <vector>
 #include <string>
 #include <optional>
+#include <type_traits>
+#ifndef LINUX_PLATFORM
+#include <charconv>
+#endif
 
 namespace OHOS::NetStack::CommonUtils {
 static const std::string DOMAIN_TYPE_HTTP_REQUEST = "httpRequest";
 static const std::string DOMAIN_TYPE_WEBSOCKET_REQUEST = "webSocket";
 const int INVALID_IP_TYPE = -1;
 const int MAX_PORT = 65535;
+// The SNI buffer of libwebsockets is 128 bytes (including the terminating null character).
+const uint32_t MAX_SERVER_NAME_LEN = 127;
+const uint32_t MAX_TLS_SERVER_NAME_LEN = 253;
 static constexpr const int WEBSOCKET_PER_MESSAGE_MAX_SIZE = 1024 * 1024 * 1024;
 static constexpr const char *WEBSOCKET_DATA_LENGTH_EXCEEDED_STR = "websocket data length exceeded";
 enum SdkVersion {
@@ -82,6 +90,10 @@ bool IsHostNameExcluded(const std::string &url, const std::string &exclusions, c
 
 int DetectIPType(const std::string &ip);
 
+std::string GetValidServerName(const std::string &serverName);
+
+std::string GetValidServerName(const std::string &serverName, uint32_t maxLength);
+
 bool IsValidIP(const std::string& ip, int af);
 
 bool IsValidIPV4(const std::string &ip);
@@ -117,5 +129,50 @@ std::string CombineStrings(const std::vector<std::string> &strs, const std::stri
 std::string CombineStringsAnonymous(const std::vector<std::string> &strs, const std::string &spliter);
 
 char *MallocCString(const std::string &origin);
+
+// Parse signed decimal integers without accepting leading whitespace or '+'.
+// Set requireFull to false for callers that accept a numeric prefix.
+template<typename T>
+bool ParseDecimalInteger(const std::string &input, T &output, bool requireFull = true)
+{
+    static_assert(std::is_integral<T>::value && std::is_signed<T>::value, "Expected a signed integer");
+#ifdef LINUX_PLATFORM
+    if (input.empty()) {
+        return false;
+    }
+    const bool negative = input.front() == '-';
+    size_t pos = negative ? 1 : 0;
+    const size_t start = pos;
+    using Unsigned = typename std::make_unsigned<T>::type;
+    const Unsigned limit = static_cast<Unsigned>(std::numeric_limits<T>::max()) + (negative ? 1 : 0);
+    constexpr Unsigned base = 10;
+    Unsigned value = 0;
+    while (pos < input.size() && input[pos] >= '0' && input[pos] <= '9') {
+        const Unsigned digit = static_cast<Unsigned>(input[pos] - '0');
+        if (value > limit / base || (value == limit / base && digit > limit % base)) {
+            return false;
+        }
+        value = value * base + digit;
+        ++pos;
+    }
+    if (pos == start || (requireFull && pos != input.size())) {
+        return false;
+    }
+    if (negative && value == limit) {
+        output = std::numeric_limits<T>::min();
+    } else {
+        output = negative ? -static_cast<T>(value) : static_cast<T>(value);
+    }
+    return true;
+#else
+    T value = 0;
+    auto [ptr, ec] = std::from_chars(input.data(), input.data() + input.size(), value);
+    if (ec != std::errc{} || (requireFull && ptr != input.data() + input.size())) {
+        return false;
+    }
+    output = value;
+    return true;
+#endif
+}
 } // namespace OHOS::NetStack::CommonUtils
 #endif /* COMMUNICATIONNETSTACK_COMMON_UTILS_H */

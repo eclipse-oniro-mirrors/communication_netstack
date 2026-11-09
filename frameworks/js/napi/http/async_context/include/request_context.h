@@ -237,6 +237,8 @@ public:
 
     void ParseRemoteValidationMode(napi_value optionsValue);
 
+    void ParseEnableCertRevocationCheck(napi_value optionsValue);
+
     void ParseTlsOption(napi_value optionsValue);
 
     void ParseServerAuthentication(napi_value optionsValue);
@@ -309,6 +311,8 @@ public:
 
     void ParseSniHostName(napi_value optionsValue);
 
+    void ParseSslServerHostnameVerification(napi_value optionsValue);
+
     void SetSyncWait(bool isSync);
 
     bool IsSyncWait() const;
@@ -373,6 +377,11 @@ private:
     RequestTracer::Trace trace_;
 
     bool CheckParamsType(napi_value *params, size_t paramsCount);
+
+    static bool ConvertToPositiveInt32(double number, uint32_t &result);
+
+    void ParseLowSpeedOption(napi_value optionsValue, const char *key,
+        void (HttpRequestOptions::*setter)(uint32_t));
 
     void ParseNumberOptions(napi_value optionsValue);
 
@@ -441,6 +450,12 @@ private:
     void ParseInactivityMs(napi_value optionsValue);
 
     void ParseEnableAutoCookie(napi_value optionsValue);
+
+    void SetExtraInfoInt64Property(napi_env env, napi_value extraInfoValue, const std::string &key);
+
+    int64_t GetExtraInfoInt64Value(const std::string &key) const;
+
+    void ParseFollowRedirectPostToGet(napi_value optionsValue);
 
 private:
     std::mutex syncMutex_;

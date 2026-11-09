@@ -155,8 +155,15 @@ void ExecFinalizeClose(napi_env env, void *data)
         NETSTACK_LOGE("sock %{public}d is previous closed", sock);
         return;
     }
+    // 关闭前按属主纪律销号：仅当登记仍指向该 fd 时由本线程关闭（CAS 成功即原子完成
+    // "销号 + 所有权转移"）。若已被 ExecClose 等路径提前复位，说明该 fd 号可能已归还
+    // 内核并被复用，此处不得再次 close，否则会误关他人 fd——表现为后续 setsockopt/bind
+    // 报 ENOTSOCK。范式与 FinalizeLocalSocket 保持一致。
+    if (!manager->SetSocketFdIfEqual(sock)) {
+        NETSTACK_LOGE("ExecFinalizeClose skip, fd %{public}d already detached from owner", sock);
+        return;
+    }
     close(sock);
-    manager->SetSocketFd(-1);
 }
  
 void ExecFinalizeCloseCallback(napi_env env, napi_status status, void *data)
@@ -233,9 +240,9 @@ void FinalizeLocalsocketServer(napi_env, void *data, void *)
             serverMgr->RemoveAllAccept();
             serverMgr->RemoveAllEventManager();
             int fd = manager->GetSocketFd();
-            if (fd >= 0) {
+            // 与 FinalizeLocalSocket 一致：CAS 销号成功才关闭，避免与关闭路径并发双关
+            if (fd >= 0 && manager->SetSocketFdIfEqual(fd)) {
                 close(fd);
-                manager->SetSocketFd(-1);
             }
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
             close(serverMgr->epollFd_);

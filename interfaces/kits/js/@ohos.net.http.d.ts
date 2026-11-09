@@ -234,6 +234,26 @@ declare namespace http {
     usingCache?: boolean;
 
     /**
+     * Indicates whether to verify the certificate revocation status during a new TLS handshake.
+     * The default value is false.
+     * <br>When set to true, an OCSP or CRL check is performed. A revoked certificate or a failure to determine
+     * its revocation status terminates the TLS connection and reports error code 2300060.
+     * <br>This option does not take effect when a cached HTTP response is returned, remote certificate validation
+     * is skipped, or validationCallback takes over certificate validation.
+     * <br>For a network request, enabling this option establishes a fresh connection, disables TLS session reuse,
+     * and may increase latency.
+     * <br>When set to false, certificate revocation status is not checked.
+     *
+     * @type {?boolean}
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @atomicservice
+     * @since 26.2.0 dynamic&static
+     */
+    enableCertRevocationCheck?: boolean;
+
+    /**
      * [1, 1000], default is 1.
      * @type {?number}
      * @syscap SystemCapability.Communication.NetStack
@@ -583,6 +603,56 @@ declare namespace http {
      * @since 23 dynamic&static
      */
     sniHostName?: string;
+
+    /**
+     * Whether to verify that the host name in the server certificate matches the requested host.
+     * The default value is true. If this parameter is set to false, host name verification is disabled,
+     * but server certificate chain verification remains enabled. Disabling host name verification may increase
+     * the risk of man-in-the-middle attacks. It is recommended that you use certificate pinning or a specified CA.
+     * @type {?boolean}
+     * @syscap SystemCapability.Communication.NetStack
+     * @since 26.2.0 dynamic&static
+     */
+    sslServerHostnameVerification?: boolean;
+
+    /**
+     * Whether to convert POST method to GET when following 301/302/303 redirect responses.
+     * Default value: false.
+     * 
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @since 26.2.0 dynamic&static
+     */
+    followRedirectPostToGet?: boolean;
+
+    /**
+     * Low speed limit threshold in bytes per second.
+     * If the transfer speed is lower than this value for longer than lowSpeedTime,
+     * the transfer will be aborted.
+     * The value should be an integer.
+     *
+     * @type { ?int }
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @since 26.2.0 dynamic&static
+     */
+    lowSpeedLimit?: int;
+
+    /**
+     * Low speed duration threshold in milliseconds.
+     * If the transfer speed is lower than lowSpeedLimit for longer than this value,
+     * the transfer will be aborted.
+     * The value should be an integer.
+     *
+     * @type { ?int }
+     * @syscap SystemCapability.Communication.NetStack
+     * @stagemodelonly
+     * @crossplatform
+     * @since 26.2.0 dynamic&static
+     */
+    lowSpeedTime?: int;
   }
 
   /**

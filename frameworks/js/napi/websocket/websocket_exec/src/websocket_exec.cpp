@@ -21,7 +21,9 @@
 #include <queue>
 #include <thread>
 #include <unistd.h>
+#include <openssl/ssl.h>
 
+#include "cert_chain_verify_helper.h"
 #include "constant.h"
 #include "napi_utils.h"
 #include "netstack_common_utils.h"
@@ -100,6 +102,8 @@ static constexpr const int WSS_DEFAULT_PORT = 443;
 namespace OHOS::NetStack::Websocket {
 
 using OHOS::NetStack::SocketStats::SocketStatisticsEvent;
+
+static constexpr const char *HOST_HEADER = "host";
 
 static const lws_protocols LWS_PROTOCOLS[] = {
     {"lws-minimal-client", WebSocketExec::LwsCallback, 0, 0},
@@ -540,6 +544,13 @@ int WebSocketExec::LwsCallbackVhostCertAging(lws *wsi, lws_callback_reasons reas
 int WebSocketExec::LwsCallback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     NETSTACK_LOGI("lws callback reason is %{public}d", reason);
+    if (reason == LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS) {
+        auto *connectContext = wsi == nullptr ? nullptr :
+            static_cast<ConnectContext *>(lws_context_user(lws_get_context(wsi)));
+        ConfigureClientCertVerify(static_cast<SSL_CTX *>(user),
+            connectContext == nullptr || connectContext->skipServerCertVerification_);
+        return 0;
+    }
     CallbackDispatcher dispatchers[] = {
         {LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER, LwsCallbackClientAppendHandshakeHeader},
         {LWS_CALLBACK_WS_PEER_INITIATED_CLOSE, LwsCallbackWsPeerInitiatedClose},
@@ -655,6 +666,21 @@ static void SetRetry(lws_retry_bo_t *retry, ConnectContext *context)
     retry->secs_since_valid_hangup = context->pingInterval_ + context->pongTimeout_;
 }
 
+static void ApplyServerNameToHost(const std::string &protocol, const std::string &serverName, int port,
+    const std::shared_ptr<EventManager> &manager, std::string &host)
+{
+    if ((protocol != PREFIX_HTTPS && protocol != PREFIX_WSS) || serverName.empty()) {
+        return;
+    }
+    // serverName takes precedence over the host name of the URL, and it determines both SNI and Host header
+    host = (protocol == PREFIX_WSS && port == WSS_DEFAULT_PORT) ? serverName :
+        serverName + NAME_END + std::to_string(port);
+    auto userData = manager->GetWebSocketUserData();
+    if (userData != nullptr && userData->header.erase(HOST_HEADER) > 0) {
+        NETSTACK_LOGI("serverName takes precedence over the Host header");
+    }
+}
+
 bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsContext,
     const std::shared_ptr<EventManager> &manager)
 {
@@ -676,6 +702,7 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     std::string tempHost;
     std::string origin;
     ParseHost(protocol, address, port, context->supportOriginPort_, tempHost, origin);
+    ApplyServerNameToHost(protocol, context->GetServerName(), port, manager, tempHost);
     if (strcpy_s(customizedProtocol, MAX_PROTOCOL_LENGTH, context->GetProtocol().c_str()) != EOK) {
         NETSTACK_LOGE("memory copy failed");
     }
@@ -693,13 +720,13 @@ bool WebSocketExec::CreatConnectInfo(ConnectContext *context, lws_context *lwsCo
     connectInfo.protocol = customizedProtocol;
 
     if (protocol == PREFIX_HTTPS || protocol == PREFIX_WSS) {
-        connectInfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK | LCCSCF_ALLOW_SELFSIGNED;
+        connectInfo.ssl_connection = LCCSCF_USE_SSL;
     }
     connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_CONMON;
     if (context->skipServerCertVerification_) {
         NETSTACK_LOGI("ExecConnect skip server cert verify");
         connectInfo.ssl_connection = ((unsigned int)connectInfo.ssl_connection) | LCCSCF_ALLOW_INSECURE |
-            LCCSCF_ALLOW_EXPIRED;
+            LCCSCF_ALLOW_EXPIRED | LCCSCF_ALLOW_SELFSIGNED | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
     }
     lws *wsi = nullptr;
     connectInfo.pwsi = &wsi;
@@ -776,11 +803,22 @@ static bool FillCaPathForAndroid(ConnectContext *context, lws_context_creation_i
 #endif
     NETSTACK_LOGI("FillCaPath: loaded %{public}d CA certs into SSL_CTX", certCount);
     SSL_CTX_set_verify(sslCtx, SSL_VERIFY_PEER, nullptr);
+    WebSocketExec::ConfigureClientCertVerify(sslCtx, context->skipServerCertVerification_);
     context->sslCtx_ = sslCtx;
     info.provided_client_ssl_ctx = sslCtx;
     return true;
 }
 #endif
+
+bool WebSocketExec::ConfigureClientCertVerify(SSL_CTX *sslCtx, bool skipVerify)
+{
+    if (sslCtx == nullptr || skipVerify) {
+        return false;
+    }
+    SSL_CTX_set_cert_verify_callback(sslCtx,
+        OHOS::NetStack::CertChain::CustomCertVerifyCallback, nullptr);
+    return true;
+}
 
 bool WebSocketExec::FillCaPath(ConnectContext *context, lws_context_creation_info &info)
 {
@@ -850,6 +888,7 @@ bool WebSocketExec::ExecConnect(ConnectContext *context)
     if (!FillCaPath(context, info)) {
         return false;
     }
+    info.user = context;
     lws_context *lwsContext = nullptr;
     std::shared_ptr<UserData> userData;
     if (manager->GetWebSocketUserData() == nullptr) {
@@ -940,6 +979,7 @@ bool WebSocketExec::ExecSend(SendContext *context)
         return false;
     }
     userData->Push(context->data, context->length, context->protocol);
+    context->data = nullptr;
     userData->TriggerWritable();
     NETSTACK_LOGD("lws ts send success");
     return true;

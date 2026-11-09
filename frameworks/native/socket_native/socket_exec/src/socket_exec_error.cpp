@@ -85,6 +85,7 @@ const static std::map<int32_t, std::string> SOCKET_ERROR_MESSAGE_MAP = {
     {TlsSocket::TLS_ERR_NO_BIND, "No bind socket"},
     {TlsSocket::TLS_ERR_SOCK_INVALID_FD, "Invalid socket FD"},
     {TlsSocket::TLS_ERR_SOCK_NOT_CONNECT, "Socket is not connected"},
+    {TlsSocket::TLS_ERR_SSL_HOSTNAME_VERIFY_FAILED, "SSL server hostname verification failed"},
 };
 
 int32_t ConvertSocketClientErrno(int32_t errCode)

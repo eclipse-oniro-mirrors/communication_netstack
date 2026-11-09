@@ -27,6 +27,7 @@ utils_include = [
 
 common_external_deps = [
   "ability_base:configuration",
+  "cJSON:cjson",
   "c_utils:utils",
   "curl:curl_shared",
   "hilog:libhilog",
@@ -37,6 +38,11 @@ ohos_unittest("http_unittest") {
     cfi = true
     cfi_cross_dso = true
     debug = false
+    # Keep the cfi blocklist aligned with the production http module
+    # (frameworks/js/napi/http/BUILD.gn): the statically linked crypto objects
+    # are thinLTO bitcode whose cfi machinery is generated at the final link,
+    # so the same exemptions must be applied when linking the test binary.
+    blocklist = "$NETSTACK_NAPI_ROOT/http/block_list.txt"
   }
 
   branch_protector_ret = "pac_ret"
@@ -50,6 +56,7 @@ ohos_unittest("http_unittest") {
     "$NETSTACK_NAPI_ROOT/http/cache/cache_constant/include",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_proxy/include",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/include",
+    "$SUBSYSTEM_DIR/netstack/test/unittest/netssl",
     "$NETSTACK_NAPI_ROOT/http/cache/lru_cache/include",
     "$NETSTACK_NAPI_ROOT/http/constant/include",
     "$NETSTACK_NAPI_ROOT/http/http_exec/include",
@@ -73,17 +80,29 @@ ohos_unittest("http_unittest") {
 
   sources = [
     "$NETSTACK_NAPI_ROOT/http/async_context/src/request_context.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/base64/src/base64_utils.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_proxy/src/cache_proxy.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_request.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_response.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_cache_strategy.cpp",
     "$NETSTACK_NAPI_ROOT/http/cache/cache_strategy/src/http_time.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/lru_cache/src/disk_handler.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/lru_cache/src/lru_cache.cpp",
+    "$NETSTACK_NAPI_ROOT/http/cache/lru_cache/src/lru_cache_disk_handler.cpp",
     "$NETSTACK_NAPI_ROOT/http/constant/src/constant.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_exec.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_tls_config.cpp",
+    "$NETSTACK_NAPI_ROOT/http/http_exec/src/http_utils.cpp",
     "$NETSTACK_NAPI_ROOT/http/http_interceptor/src/http_interceptor.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_request_options.cpp",
     "$NETSTACK_NAPI_ROOT/http/options/src/http_response.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/common_utils/src/netstack_common_utils.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/epoll_request_handler.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/epoll_multi_driver.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/src/netstack_chr_client.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/netstack_chr_client/src/netstack_chr_report.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/src/http_network_message.cpp",
+    "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/src/i_network_message.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/profiler_utils/src/netstack_network_profiler.cpp",
     "$SUBSYSTEM_DIR/netstack/utils/tlv_utils/src/tlv_utils.cpp",
     "ExtendInfoTest.cpp",
@@ -133,9 +152,16 @@ ohos_unittest("http_unittest") {
         defined(global_parts_info.communication_netmanager_base) &&
         global_parts_info.communication_netmanager_base) {
       external_deps += [
+        "bundle_framework:appexecfwk_base",
+        "bundle_framework:appexecfwk_core",
         "netmanager_base:net_conn_manager_if",
         "netmanager_base:net_security_config_if",
         "netmanager_base:netsys_client",
+        "safwk:system_ability_fwk",
+        "samgr:samgr_proxy",
+      ]
+      sources += [
+        "$SUBSYSTEM_DIR/netstack/utils/http_over_curl/src/http_handover_handler.cpp",
       ]
       defines = [
         "HAS_NETMANAGER_BASE=1",
@@ -152,8 +178,17 @@ ohos_unittest("http_unittest") {
     }
     defines += [ "ENABLE_HTTP_INTERCEPT=1" ]
     if (product_name != "ohos-sdk") {
+      if (netstack_http_boringssl) {
+        sources += [ "$NETSTACK_NATIVE_ROOT/net_ssl/cert_chain_verify_helper.cpp" ]
+        include_dirs += [ "$NETSTACK_DIR/interfaces/innerkits/net_ssl/include" ]
+        defines += [ "NETSTACK_CERT_CHAIN_BORINGSSL" ]
+      } else {
+        deps += [ "$SUBSYSTEM_DIR/netstack/interfaces/innerkits/net_ssl:net_ssl" ]
+      }
       external_deps += [ "init:libbegetutil" ]
+      external_deps += [ "certificate_framework:certificate_framework_core" ]
       defines += [
+        "HTTP_CERT_REVOCATION_ENABLE",
         "HTTP_PROXY_ENABLE",
         "HTTP_MULTIPATH_CERT_ENABLE",
         "HTTP_ONLY_VERIFY_ROOT_CA_ENABLE",

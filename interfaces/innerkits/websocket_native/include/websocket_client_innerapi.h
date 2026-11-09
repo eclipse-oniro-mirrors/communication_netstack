@@ -16,23 +16,20 @@
 #ifndef COMMUNICATIONNETSTACK_WEBSOCKET_CLIENT_H
 #define COMMUNICATIONNETSTACK_WEBSOCKET_CLIENT_H
 
-#include <atomic>
 #include <map>
 #include <memory>
 #include <mutex>
-#include <queue>
-#include <signal.h>
-#include <string.h>
 #include <string>
 #include <thread>
-#include <libwebsockets.h>
+#include <utility>
 
-#include "client_context.h"
 #include "websocket_client_error.h"
+#include "atomic_callback.h"
 
 namespace OHOS {
 namespace NetStack {
 namespace WebSocketClient {
+class ClientContext;
 
 struct CloseResult {
     unsigned int code;
@@ -63,19 +60,21 @@ struct OpenInfo {
 struct OpenOptions {
     std::map<std::string, std::string> headers;
     bool supportOriginPort = false;
+    std::string serverName;
 };
 
 class WebSocketClient : public std::enable_shared_from_this<WebSocketClient> {
 public:
     WebSocketClient();
     ~WebSocketClient();
-    typedef void (*OnMessageCallback)(WebSocketClient *client, const std::string &data, size_t length);
-    typedef void (*OnCloseCallback)(WebSocketClient *client, CloseResult closeResult);
-    typedef void (*OnErrorCallback)(WebSocketClient *client, ErrorResult error);
-    typedef void (*OnOpenCallback)(WebSocketClient *client, OpenResult openResult);
-    typedef void (*OnOpenInfoCallback)(WebSocketClient *client, OpenInfo openInfo);
-    typedef void (*OnHeaderReceiveCallback)(WebSocketClient *client, const std::map<std::string, std::string> &headers);
-    typedef void (*OnDataEndCallback)(WebSocketClient *client);
+    using OnMessageCallback = std::function<void(WebSocketClient *client, const std::string &data, size_t length)>;
+    using OnCloseCallback = std::function<void(WebSocketClient *client, CloseResult closeResult)>;
+    using OnErrorCallback = std::function<void(WebSocketClient *client, ErrorResult error)>;
+    using OnOpenCallback = std::function<void(WebSocketClient *client, OpenResult openResult)>;
+    using OnOpenInfoCallback = std::function<void(WebSocketClient *client, OpenInfo openInfo)>;
+    using OnHeaderReceiveCallback =
+        std::function<void(WebSocketClient *client, const std::map<std::string, std::string> &headers)>;
+    using OnDataEndCallback = std::function<void(WebSocketClient *client)>;
 
     int Connect(std::string URL, OpenOptions Options);
     int ConnectEx(std::string URL, OpenOptions Options);
@@ -90,20 +89,22 @@ public:
     const std::string &GetData();
     void ClearData();
 
-    std::atomic<OnMessageCallback> onMessageCallback_{nullptr};
-    std::atomic<OnCloseCallback> onCloseCallback_{nullptr};
-    std::atomic<OnErrorCallback> onErrorCallback_{nullptr};
-    std::atomic<OnOpenCallback> onOpenCallback_{nullptr};
-    OnOpenInfoCallback onOpenInfoCallback_ = nullptr;
-    std::atomic<OnHeaderReceiveCallback> onHeaderReceiveCallback_{nullptr};
-    std::atomic<OnDataEndCallback> onDataEndCallback_{nullptr};
+    AtomicCallback<OnMessageCallback> onMessageCallback_;
+    AtomicCallback<OnCloseCallback> onCloseCallback_;
+    AtomicCallback<OnErrorCallback> onErrorCallback_;
+    AtomicCallback<OnOpenCallback> onOpenCallback_;
+    AtomicCallback<OnOpenInfoCallback> onOpenInfoCallback_;
+    AtomicCallback<OnHeaderReceiveCallback> onHeaderReceiveCallback_;
+    AtomicCallback<OnDataEndCallback> onDataEndCallback_;
     ClientContext *GetClientContext() const;
+    std::shared_ptr<ClientContext> GetClientContextShared() const;
 
 private:
     void RunLwsThread();
-    ClientContext *clientContext;
+    std::shared_ptr<ClientContext> clientContext_;
     std::string data_;
     std::thread serviceThread_;
+    std::mutex operationMutex_;
 };
 } // namespace WebSocketClient
 } // namespace NetStack
