@@ -189,7 +189,7 @@ impl TlsServerConnectBox {
 
         if let Some(callback) = &self.on_connect {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                callback.execute((conn_ref,));
+                callback.execute_spawn_thread((conn_ref,));
             }));
             
             match result {

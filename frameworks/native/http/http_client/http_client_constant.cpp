@@ -28,6 +28,7 @@ const char *const HttpConstant::HTTP_METHOD_DELETE = "DELETE";
 const char *const HttpConstant::HTTP_METHOD_POST = "POST";
 const char *const HttpConstant::HTTP_METHOD_PUT = "PUT";
 const char *const HttpConstant::HTTP_METHOD_CONNECT = "CONNECT";
+const char *const HttpConstant::HTTP_METHOD_PATCH = "PATCH";
 
 const uint32_t HttpConstant::DEFAULT_READ_TIMEOUT = 60000;
 const uint32_t HttpConstant::DEFAULT_CONNECT_TIMEOUT = 60000;
@@ -91,6 +92,18 @@ const char *const HttpConstant::HTTP_CONTENT_ENCODING_GZIP = "gzip";
 
 const char *const HttpConstant::REQUEST_TIME = "requestTime";
 const char *const HttpConstant::RESPONSE_TIME = "responseTime";
+
+const char *const HttpConstant::PARAM_KEY_NETWORK_PROTOCOL_NAME = "networkProtocolName";
+const char *const HttpConstant::PARAM_KEY_TLS_VERSION = "tlsVersion";
+const char *const HttpConstant::PARAM_KEY_CIPHER_SUITE = "cipherSuite";
+const char *const HttpConstant::PARAM_KEY_LOCAL_ADDRESS = "localAddress";
+const char *const HttpConstant::PARAM_KEY_REMOTE_ADDRESS = "remoteAddress";
+const char *const HttpConstant::PARAM_KEY_LOCAL_PORT = "localPort";
+const char *const HttpConstant::PARAM_KEY_REMOTE_PORT = "remotePort";
+const char *const HttpConstant::PARAM_KEY_IS_REUSED_CONNECTION = "isReusedConnection";
+const char *const HttpConstant::PARAM_KEY_IS_PROXY_CONNECTION = "isProxyConnection";
+const char *const HttpConstant::PARAM_KEY_IS_CACHE_HIT = "isCacheHit";
+const char *const HttpConstant::PARAM_KEY_REDIRECT_COUNT = "redirectCount";
 } // namespace HttpClient
 } // namespace NetStack
 } // namespace OHOS

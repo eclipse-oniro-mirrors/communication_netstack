@@ -59,6 +59,21 @@ pub struct HttpProxy {
     pub exclusion_list: Vec<String>,
 }
 
+#[ani_rs::ani(path = "@ohos.net.connection.connection.Socks5ProxyInner")]
+pub struct Socks5Proxy {
+    pub host: String,
+
+    pub port: i32,
+
+    pub username: Option<String>,
+
+    pub password: Option<String>,
+
+    pub dns_strategy: Option<i32>,
+
+    pub exclusion_list: Option<Vec<String>>,
+}
+
 #[ani_rs::ani]
 pub struct HttpRequestOptions<'local> {
     pub method: Option<RequestMethod>,
@@ -83,6 +98,12 @@ pub struct HttpRequestOptions<'local> {
 
     pub ca_path: Option<String>,
 
+    pub ca_data: Option<String>,
+
+    pub ssl_type: Option<String>,
+
+    pub client_enc_cert: Option<ClientCert>,
+
     pub resume_from: Option<i64>,
 
     pub resume_to: Option<i64>,
@@ -99,13 +120,32 @@ pub struct HttpRequestOptions<'local> {
 
     pub certificate_pinning: Option<AniObject<'local>>,
 
-    pub remote_validation: Option<String>,
+    pub remote_validation: Option<AniObject<'local>>,
 
     pub tls_options: Option<AniObject<'local>>,
 
     pub server_authentication: Option<ServerAuthentication>,
 
     pub address_family: Option<AddressFamily>,
+
+    pub sni_host_name: Option<String>,
+    pub max_redirects: Option<i32>,
+
+    pub custom_method: Option<String>,
+
+    pub path_preference: Option<String>,
+
+    pub reuse_connections: Option<bool>,
+
+    pub inactivity_ms: Option<i32>,
+
+    pub using_socks5_proxy: Option<Socks5Proxy>,
+
+    pub enable_partial_chain: Option<bool>,
+
+    pub query_params: Option<AniObject<'local>>,
+
+    pub body: Option<AniObject<'local>>,
 }
 
 #[ani_rs::ani(path = "@ohos.net.http.http.ServerAuthenticationInner")]
@@ -204,6 +244,8 @@ pub enum RequestMethod {
     Trace,
 
     Connect,
+
+    Patch,
 }
 
 impl RequestMethod {
@@ -217,6 +259,7 @@ impl RequestMethod {
             RequestMethod::Delete => "DELETE",
             RequestMethod::Trace => "TRACE",
             RequestMethod::Connect => "CONNECT",
+            RequestMethod::Patch => "PATCH",
         }
     }
 }
@@ -226,85 +269,85 @@ impl RequestMethod {
 pub enum ResponseCode {
     Ok = 200,
 
-    Created,
+    Created = 201,
 
-    Accepted,
+    Accepted = 202,
 
-    NotAuthoritative,
+    NotAuthoritative = 203,
 
-    NoContent,
+    NoContent = 204,
 
-    Reset,
+    Reset = 205,
 
-    Partial,
+    Partial = 206,
 
     MultChoice = 300,
 
-    MovedPerm,
+    MovedPerm = 301,
 
-    MovedTemp,
+    MovedTemp = 302,
 
-    SeeOther,
+    SeeOther = 303,
 
-    NotModified,
+    NotModified = 304,
 
-    UseProxy,
+    UseProxy = 305,
 
     BadRequest = 400,
 
-    Unauthorized,
+    Unauthorized = 401,
 
-    PaymentRequired,
+    PaymentRequired = 402,
 
-    Forbidden,
+    Forbidden = 403,
 
-    NotFound,
+    NotFound = 404,
 
-    BadMethod,
+    BadMethod = 405,
 
-    NotAcceptable,
+    NotAcceptable = 406,
 
-    ProxyAuth,
+    ProxyAuth = 407,
 
-    ClientTimeout,
+    ClientTimeout = 408,
 
-    Conflict,
+    Conflict = 409,
 
-    Gone,
+    Gone = 410,
 
-    LengthRequired,
+    LengthRequired = 411,
 
-    PreconFailed,
+    PreconFailed = 412,
 
-    EntityTooLarge,
+    EntityTooLarge = 413,
 
-    ReqTooLong,
+    ReqTooLong = 414,
 
-    UnsupportedType,
+    UnsupportedType = 415,
 
-    RangeNotSatisfiable,
+    RangeNotSatisfiable = 416,
 
     InternalError = 500,
 
-    NotImplemented,
+    NotImplemented = 501,
 
-    BadGateway,
+    BadGateway = 502,
 
-    Unavailable,
+    Unavailable = 503,
 
-    GatewayTimeout,
+    GatewayTimeout = 504,
 
-    Version,
+    Version = 505,
 }
 
 #[ani_rs::ani(path = "@ohos.net.http.http.HttpProtocol")]
 #[repr(i32)]
 pub enum HttpProtocol {
-    Http1_1,
+    Http1_1 = 0,
 
-    Http2,
+    Http2 = 1,
 
-    Http3,
+    Http3 = 2,
 }
 
 impl HttpProtocol {
@@ -322,7 +365,7 @@ impl HttpProtocol {
 #[derive(Clone)]
 #[repr(i32)]
 pub enum HttpDataType {
-    String,
+    String = 0,
 
     Object = 1,
 
@@ -346,6 +389,66 @@ pub enum ResponseCodeOutput {
     I32(i32),
 }
 
+#[ani_rs::ani(path = "@ohos.net.http.http.ConnectionExtraInfoInner")]
+pub struct ConnectionExtraInfo {
+    pub network_protocol_name: String,
+
+    pub tls_version: Option<TlsVersion>,
+
+    pub cipher_suite: Option<String>,
+
+    pub local_address: String,
+
+    pub remote_address: String,
+
+    pub local_port: i32,
+
+    pub remote_port: i32,
+
+    pub is_reused_connection: bool,
+
+    pub is_proxy_connection: bool,
+
+    pub is_cache_hit: bool,
+
+    pub redirect_count: i32,
+}
+
+#[ani_rs::ani(path = "@ohos.net.http.http.ValidationContextInner")]
+pub struct ValidationContext<'local> {
+    pub pem_certs: Vec<String>,
+
+    pub x509_certs: Vec<AniObject<'local>>,
+
+    pub host: String,
+
+    pub ip: String,
+}
+
+impl From<netstack_rs::response::ConnectionExtraInfo> for ConnectionExtraInfo {
+    fn from(value: netstack_rs::response::ConnectionExtraInfo) -> Self {
+        Self {
+            network_protocol_name: value.network_protocol_name,
+            tls_version: match value.tls_version.as_deref() {
+                Some("TLS_V_1_0") => Some(TlsVersion::TlsV_1_0),
+                Some("TLS_V_1_1") => Some(TlsVersion::TlsV_1_1),
+                Some("TLS_V_1_2") => Some(TlsVersion::TlsV_1_2),
+                Some("TLS_V_1_3") => Some(TlsVersion::TlsV_1_3),
+                _ => None,
+            },
+            cipher_suite: value.cipher_suite,
+            local_address: value.local_address,
+            remote_address: value.remote_address,
+            local_port: value.local_port,
+            remote_port: value.remote_port,
+            is_reused_connection: value.is_reused_connection,
+            is_proxy_connection: value.is_proxy_connection,
+            is_cache_hit: value.is_cache_hit,
+            redirect_count: value.redirect_count,
+        }
+    }
+}
+
 #[ani_rs::ani(path = "@ohos.net.http.http.HttpResponseInner", output = "only")]
 pub struct HttpResponse {
     pub result: GlobalRef<AniRef<'static>>,
@@ -354,6 +457,7 @@ pub struct HttpResponse {
     pub header: HashMap<String, String>,
     pub cookies: String,
     pub performance_timing: PerformanceTiming,
+    pub connection_extra_info: Option<ConnectionExtraInfo>,
 }
 
 impl HttpResponse {
@@ -363,7 +467,8 @@ impl HttpResponse {
         code: i32,
         header: HashMap<String, String>,
         cookies: String,
-        performance_timing: PerformanceTiming) -> Self {
+        performance_timing: PerformanceTiming,
+        connection_extra_info: Option<ConnectionExtraInfo>) -> Self {
         Self {
             result,
             result_type,
@@ -371,6 +476,7 @@ impl HttpResponse {
             header,
             cookies,
             performance_timing,
+            connection_extra_info,
         }
     }
 }

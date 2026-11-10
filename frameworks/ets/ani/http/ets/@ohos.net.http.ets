@@ -16,11 +16,14 @@
 
 import type { AsyncCallback, Callback } from '@ohos.base';
 import type connection from '@ohos.net.connection';
+import type cert from '@ohos.security.cert';
 import { BusinessError, RecordData }  from '@ohos.base';
 
 export default namespace http {
   loadLibrary("http_ani")
   export type HttpProxy = connection.HttpProxy;
+
+  export type Socks5Proxy = connection.Socks5Proxy;
 
   class Cleaner {
     private nativePtr: long = 0
@@ -74,6 +77,12 @@ export default namespace http {
 
     caPath?: string;
 
+    caData?: string;
+
+    sslType?: SslType;
+
+    clientEncCert?: ClientCert;
+
     resumeFrom?: long;
 
     resumeTo?: long;
@@ -97,6 +106,26 @@ export default namespace http {
     serverAuthentication?: ServerAuthentication;
 
     addressFamily?: AddressFamily;
+
+    sniHostName?: string;
+
+    maxRedirects?: int;
+
+    customMethod?: string;
+
+    pathPreference?: PathPreference;
+
+    reuseConnections?: boolean;
+
+    inactivityMs?: int;
+
+    usingSocks5Proxy?: Socks5Proxy;
+
+    enablePartialChain?: boolean;
+
+    queryParams?: string | QueryParamObject;
+
+    body?: string | Object | ArrayBuffer;
   }
 
   export interface ServerAuthentication {
@@ -113,9 +142,59 @@ export default namespace http {
 
   export type TlsOptions = 'system' | TlsConfig;
 
-  export type RemoteValidation = 'system' | 'skip';
+  export type X509Cert = cert.X509Cert;
+
+  export interface ValidationContext {
+
+    pemCerts: string[];
+
+    x509Certs: X509Cert[];
+
+    host: string;
+
+    ip: string;
+  }
+
+  class ValidationContextInner implements ValidationContext {
+    pemCerts: string[];
+
+    x509Certs: X509Cert[];
+
+    host: string;
+
+    ip: string;
+  }
+
+  class ValidationCallbackWrapper {
+    static async validationCallbackFuncAsync(callback: ValidationCallback, context: ValidationContext): Promise<boolean> {
+      let result = callback(context);
+      if (result instanceof Promise) {
+        return result;
+      }
+      return Promise.resolve(result);
+    }
+
+    static validationCallbackFunc(callback: ValidationCallback, context: ValidationContext): boolean {
+      let ret = waitForCompletion(async () => {
+        return await ValidationCallbackWrapper.validationCallbackFuncAsync(callback, context);
+      })
+      return ret;
+    }
+  }
+
+  export type ValidationCallback = (context: ValidationContext) => boolean | Promise<boolean>;
+
+  export type RemoteValidation = 'system' | 'skip' | ValidationCallback;
 
   export type AuthenticationType = 'basic' | 'ntlm' | 'digest';
+
+  export type SslType = 'TLS' | 'TLCP';
+
+  export type PathPreference = 'auto' | 'primaryCellular' | 'secondaryCellular';
+
+  export type QueryParamValue = string | int | boolean | null | undefined;
+
+  export type QueryParamObject = Record<string, QueryParamValue | QueryParamValue[]>;
 
   export interface Credential {
     username: string;
@@ -248,6 +327,10 @@ export default namespace http {
 
     requestInStream(url: string, options?: HttpRequestOptions): Promise<int>;
 
+    requestSync(url: string, options?: HttpRequestOptions): HttpResponse;
+
+    enableAutoCookie(enable: boolean): void;
+
     destroy(): void;
 
     onHeadersReceive(callback: Callback<Record<string, string>>): void;
@@ -283,6 +366,8 @@ export default namespace http {
     unregisterCleaner(): void {
         httpRequestDestroyRegister.unregister(unregisterToken);
     }
+
+    native requestSync(url: string, options?: HttpRequestOptions): HttpResponse;
 
     native requestInner(url: string, callback: AsyncCallback<HttpResponse>, options?: HttpRequestOptions): void;
 
@@ -327,6 +412,8 @@ export default namespace http {
         }, options);
       });
     }
+
+    native enableAutoCookie(enable: boolean): void;
 
     native destroy(): void;
 
@@ -424,94 +511,96 @@ export default namespace http {
 
     TRACE = "TRACE",
 
-    CONNECT = "CONNECT"
+    CONNECT = "CONNECT",
+
+    PATCH = "PATCH"
   }
 
   export enum ResponseCode {
     OK = 200,
 
-    CREATED,
+    CREATED = 201,
 
-    ACCEPTED,
+    ACCEPTED = 202,
 
-    NOT_AUTHORITATIVE,
+    NOT_AUTHORITATIVE = 203,
 
-    NO_CONTENT,
+    NO_CONTENT = 204,
 
-    RESET,
+    RESET = 205,
 
-    PARTIAL,
+    PARTIAL = 206,
 
     MULT_CHOICE = 300,
 
-    MOVED_PERM,
+    MOVED_PERM = 301,
 
-    MOVED_TEMP,
+    MOVED_TEMP = 302,
 
-    SEE_OTHER,
+    SEE_OTHER = 303,
 
-    NOT_MODIFIED,
+    NOT_MODIFIED = 304,
 
-    USE_PROXY,
+    USE_PROXY = 305,
 
     BAD_REQUEST = 400,
 
-    UNAUTHORIZED,
+    UNAUTHORIZED = 401,
 
-    PAYMENT_REQUIRED,
+    PAYMENT_REQUIRED = 402,
 
-    FORBIDDEN,
+    FORBIDDEN = 403,
 
-    NOT_FOUND,
+    NOT_FOUND = 404,
 
-    BAD_METHOD,
+    BAD_METHOD = 405,
 
-    NOT_ACCEPTABLE,
+    NOT_ACCEPTABLE = 406,
 
-    PROXY_AUTH,
+    PROXY_AUTH = 407,
 
-    CLIENT_TIMEOUT,
+    CLIENT_TIMEOUT = 408,
 
-    CONFLICT,
+    CONFLICT = 409,
 
-    GONE,
+    GONE = 410,
 
-    LENGTH_REQUIRED,
+    LENGTH_REQUIRED = 411,
 
-    PRECON_FAILED,
+    PRECON_FAILED = 412,
 
-    ENTITY_TOO_LARGE,
+    ENTITY_TOO_LARGE = 413,
 
-    REQ_TOO_LONG,
+    REQ_TOO_LONG = 414,
 
-    UNSUPPORTED_TYPE,
+    UNSUPPORTED_TYPE = 415,
 
-    RANGE_NOT_SATISFIABLE,
+    RANGE_NOT_SATISFIABLE = 416,
 
     INTERNAL_ERROR = 500,
 
-    NOT_IMPLEMENTED,
+    NOT_IMPLEMENTED = 501,
 
-    BAD_GATEWAY,
+    BAD_GATEWAY = 502,
 
-    UNAVAILABLE,
+    UNAVAILABLE = 503,
 
-    GATEWAY_TIMEOUT,
+    GATEWAY_TIMEOUT = 504,
 
-    VERSION
+    VERSION = 505
   }
 
 
   export enum HttpProtocol {
-    HTTP1_1,
+    HTTP1_1 = 0,
 
-    HTTP2,
+    HTTP2 = 1,
 
-    HTTP3
+    HTTP3 = 2
   }
 
   export enum HttpDataType {
-    STRING,
+    STRING = 0,
 
     OBJECT = 1,
 
@@ -530,6 +619,8 @@ export default namespace http {
     cookies: string;
 
     performanceTiming: PerformanceTiming;
+
+    connectionExtraInfo?: ConnectionExtraInfo;
   }
 
   class HttpResponseInner implements HttpResponse {
@@ -544,6 +635,58 @@ export default namespace http {
     cookies: string;
 
     performanceTiming: PerformanceTiming;
+
+    connectionExtraInfo?: ConnectionExtraInfo;
+  }
+
+  export interface ConnectionExtraInfo {
+
+    networkProtocolName: string;
+
+    tlsVersion?: TlsVersion;
+
+    cipherSuite?: CipherSuite;
+
+    localAddress: string;
+
+    remoteAddress: string;
+
+    localPort: int;
+
+    remotePort: int;
+
+    isReusedConnection: boolean;
+
+    isProxyConnection: boolean;
+
+    isCacheHit: boolean;
+
+    redirectCount: int;
+  }
+
+  class ConnectionExtraInfoInner implements ConnectionExtraInfo {
+
+    networkProtocolName: string;
+
+    tlsVersion?: TlsVersion;
+
+    cipherSuite?: CipherSuite;
+
+    localAddress: string;
+
+    remoteAddress: string;
+
+    localPort: int;
+
+    remotePort: int;
+
+    isReusedConnection: boolean;
+
+    isProxyConnection: boolean;
+
+    isCacheHit: boolean;
+
+    redirectCount: int;
   }
 
   export interface PerformanceTiming {

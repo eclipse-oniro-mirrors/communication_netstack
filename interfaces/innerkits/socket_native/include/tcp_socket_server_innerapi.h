@@ -17,6 +17,7 @@
 #define COMMUNICATIONNETSTACK_SOCKET_SERVER_H
 
 #include <atomic>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -64,6 +65,7 @@ public:
 
     void SetSocketFd(const int32_t sockFd) { socketFd_ = sockFd; }
     int32_t GetClientId() const { return clientId_; }
+    bool WaitForMessageCallback();
 
 private:
     void CallOnMessageCallback(const std::string &data, const SocketRemoteInfo &remoteInfo);
@@ -75,6 +77,8 @@ private:
     TCPSocketConnectionOnMessageCallback onMessageCallback_ = nullptr;
     TCPSocketConnectionOnCloseCallback onCloseCallback_ = nullptr;
     TCPSocketConnectionOnErrorCallback onErrorCallback_ = nullptr;
+    std::condition_variable messageCallbackCv_;
+    std::atomic<bool> messageCallbackRegistered_{false};
 
     int32_t clientId_;
     int socketFd_ = -1;

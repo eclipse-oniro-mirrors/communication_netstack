@@ -839,4 +839,78 @@ HWTEST_F(TcpSocketServerTest, ServerErrorCallback001, TestSize.Level1)
     EXPECT_FALSE(errorSet.load());
 }
 
+HWTEST_F(TcpSocketServerTest, ConnectionWaitForMessageCallback001, TestSize.Level1)
+{
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    auto conn = std::make_shared<TCPSocketConnection>(TEST_CLIENT_ID);
+    conn->SetSocketFd(sv[0]);
+    conn->OnMessage(OnConnectionMessageCallback);
+    EXPECT_TRUE(conn->WaitForMessageCallback());
+    close(sv[0]);
+    close(sv[1]);
+}
+
+HWTEST_F(TcpSocketServerTest, ConnectionWaitForMessageCallback002, TestSize.Level1)
+{
+    auto conn = std::make_shared<TCPSocketConnection>(TEST_CLIENT_ID);
+    EXPECT_FALSE(conn->WaitForMessageCallback());
+}
+
+HWTEST_F(TcpSocketServerTest, ConnectionWaitForMessageCallback003, TestSize.Level1)
+{
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    auto conn = std::make_shared<TCPSocketConnection>(TEST_CLIENT_ID);
+    conn->SetSocketFd(sv[0]);
+    std::thread closer([conn]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_MS));
+        conn->Close();
+    });
+    EXPECT_FALSE(conn->WaitForMessageCallback());
+    closer.join();
+    close(sv[1]);
+}
+
+HWTEST_F(TcpSocketServerTest, ConnectionWaitForMessageCallback004, TestSize.Level1)
+{
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    auto conn = std::make_shared<TCPSocketConnection>(TEST_CLIENT_ID);
+    conn->SetSocketFd(sv[0]);
+    EXPECT_FALSE(conn->WaitForMessageCallback());
+    close(sv[0]);
+    close(sv[1]);
+}
+
+HWTEST_F(TcpSocketServerTest, ServerClientAbortBeforeMessageRegistered001, TestSize.Level1)
+{
+    auto server = std::make_shared<TCPSocketServer>();
+    uint16_t realPort = ListenAndGetRealPort(server);
+    ASSERT_NE(realPort, 0);
+
+    std::atomic<int32_t> connectedClientId(-1);
+    int clientFd = ConnectAndAccept(server, realPort, connectedClientId);
+    ASSERT_GE(clientFd, 0);
+
+    auto conn = server->GetConnectionByClientID(connectedClientId.load());
+    ASSERT_NE(conn, nullptr);
+
+    EXPECT_EQ(conn->Close(), SOCKET_ERROR_OK);
+
+    auto start = std::chrono::steady_clock::now();
+    while (server->GetConnectionByClientID(connectedClientId.load()) != nullptr) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_MS));
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start).count();
+        if (elapsed >= static_cast<int64_t>(WAIT_TIMEOUT_MS)) {
+            break;
+        }
+    }
+    EXPECT_EQ(server->GetConnectionByClientID(connectedClientId.load()), nullptr);
+
+    close(clientFd);
+    server->Close();
+}
+
 } // namespace

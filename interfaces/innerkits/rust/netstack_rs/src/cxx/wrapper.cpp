@@ -23,13 +23,16 @@
 #include "http_client_request.h"
 #include "http_client_constant.h"
 #include "netstack_common_utils.h"
-#include "netstack_log.h"
 
 namespace OHOS::Request {
 using namespace OHOS::NetStack::HttpClient;
 static const int32_t ADDRESS_FAMILY_DEFAULT = 0;
 static const int32_t ADDRESS_FAMILY_ONLY_V4 = 1;
 static const int32_t ADDRESS_FAMILY_ONLY_V6 = 2;
+static constexpr size_t MAX_SNI_HOSTNAME_LEN = 255;
+static constexpr size_t CADATA_STRING_MAX_LENGTH = 8000;
+static constexpr int32_t SOCKS5_DNS_STRATEGY_UNSET = -1;
+static constexpr size_t MAX_CUSTOMMETHOD_LENGTH = 128;
 
 void OnRequestStyleCallback(const std::shared_ptr<HttpClientTask> &task, const std::shared_ptr<CallbackWrapper> &shared)
 {
@@ -80,8 +83,14 @@ void OnCallback(const std::shared_ptr<HttpClientTask> &task, rust::Box<CallbackW
             shared->on_data_receive(httpTask, data, size);
         }
     });
-    task->OnProgress([shared](const HttpClientRequest &, u_long dlTotal, u_long dlNow, u_long ulTotal, u_long ulNow) {
-        shared->on_progress(dlTotal, dlNow, ulTotal, ulNow);
+    task->OnProgress([shared, weak](const HttpClientRequest &, u_long dlTotal, u_long dlNow, u_long ulTotal,
+        u_long ulNow) {
+        bool isRequestInStream = false;
+        auto httpTask = weak.lock();
+        if (httpTask != nullptr) {
+            isRequestInStream = httpTask->IsRequestInStream();
+        }
+        shared->on_progress(isRequestInStream ? dlTotal : 0, isRequestInStream ? dlNow : 0, ulTotal, ulNow);
     });
     task->OnHeadersReceive([shared](const HttpClientRequest &, std::map<std::string, std::string> headers) {
         if (shared == nullptr || headers.empty()) {
@@ -133,6 +142,11 @@ PerformanceInfoRust GetPerformanceTiming(HttpClientResponse &response)
         .redirect_timing = preFormanceInfo.redirectTiming,
     };
     return info;
+}
+
+rust::String GetExtraInfoItem(const HttpClientResponse &response, const std::string &key)
+{
+    return rust::String(response.GetExtraInfoItem(key, ""));
 }
 
 void SetAddressFamily(HttpClientRequest &request, int32_t addressFamily)
@@ -188,6 +202,30 @@ void SetClientCert(HttpClientRequest &request, const ClientCert& cert)
             break;
     }
     request.SetClientCert(clientCert);
+}
+
+void SetClientEncCert(HttpClientRequest &request, const ClientCert& cert)
+{
+    HttpClientCert clientEncCert;
+
+    clientEncCert.certPath = std::string(cert.cert_path.data(), cert.cert_path.size());
+    clientEncCert.keyPath = std::string(cert.key_path.data(), cert.key_path.size());
+    SecureData keyPassword;
+    keyPassword.append(std::string(cert.key_password.data(), cert.key_password.size()).c_str());
+    clientEncCert.keyPassword = keyPassword;
+
+    switch (cert.cert_type) {
+        case CertType::Pem:
+            clientEncCert.certType = "Pem";
+            break;
+        case CertType::Der:
+            clientEncCert.certType = "Der";
+            break;
+        case CertType::P12:
+            clientEncCert.certType = "P12";
+            break;
+    }
+    request.SetClientEncCert(clientEncCert);
 }
 
 void SetDNSServers(HttpClientRequest &request, const rust::vec<rust::string>& servers)
@@ -259,7 +297,98 @@ void SetSpecifiedHttpProxy(HttpClientRequest &request, const HttpProxyRust& prox
     nativeValue.host = std::string(proxy.host.data(), proxy.host.size());
     nativeValue.port = proxy.port;
     nativeValue.exclusions = std::string(proxy.exclusions.data(), proxy.exclusions.size());
+    nativeValue.username.assign(proxy.username.data(), proxy.username.size());
+    nativeValue.password.assign(proxy.password.data(), proxy.password.size());
     request.SetHttpProxy(nativeValue);
+}
+
+void SetUsingSocks5Proxy(HttpClientRequest &request, const Socks5ProxyRust &proxy)
+{
+    std::string host(proxy.host.data(), proxy.host.size());
+    if (host.empty() || proxy.port <= 0) {
+        return;
+    }
+    Socks5DnsStrategy dnsStrategy = Socks5DnsStrategy::UNSPECIFIED;
+    if (proxy.dns_strategy != SOCKS5_DNS_STRATEGY_UNSET) {
+        dnsStrategy = proxy.dns_strategy == 0 ? Socks5DnsStrategy::SYSTEM_MODE : Socks5DnsStrategy::PROXY_MODE;
+    }
+    std::string exclusionList;
+    for (size_t i = 0; i < proxy.exclusion_list.size(); ++i) {
+        if (i != 0) {
+            exclusionList += HttpConstant::HTTP_PROXY_EXCLUSIONS_SEPARATOR;
+        }
+        exclusionList += std::string(proxy.exclusion_list[i].data(), proxy.exclusion_list[i].size());
+    }
+    Socks5Proxy nativeValue;
+    nativeValue.host = host;
+    nativeValue.port = proxy.port;
+    nativeValue.username.assign(proxy.username.data(), proxy.username.size());
+    nativeValue.password.assign(proxy.password.data(), proxy.password.size());
+    nativeValue.dnsStrategy = dnsStrategy;
+    nativeValue.exclusionList = exclusionList;
+    request.SetSocks5Proxy(nativeValue);
+}
+
+void SetMaxRedirects(HttpClientRequest &request, int32_t maxRedirects)
+{
+    if (maxRedirects < 0) {
+        return;
+    }
+    request.SetMaxRedirects(static_cast<uint32_t>(maxRedirects));
+}
+
+void SetSniHostName(HttpClientRequest &request, const std::string &hostName)
+{
+    std::string sni = hostName;
+    if (!sni.empty() && sni.back() == '.') {
+        sni.pop_back();
+    }
+    if (!sni.empty() && sni.length() <= MAX_SNI_HOSTNAME_LEN) {
+        request.SetSniHostName(sni);
+    }
+}
+
+void SetInactivityMs(HttpClientRequest &request, int32_t inactivityMs)
+{
+    if (inactivityMs > 0) {
+        request.SetInactivityMs(static_cast<uint32_t>(inactivityMs));
+    }
+}
+
+void SetCaData(HttpClientRequest &request, const std::string &caData)
+{
+    if (request.GetCaPath().empty() && !caData.empty() && caData.size() < CADATA_STRING_MAX_LENGTH) {
+        request.SetCaData(caData);
+    }
+}
+
+void SetSslType(HttpClientRequest &request, const std::string &sslType)
+{
+    if (sslType == "TLCP") {
+        request.SetSslType(SslType::TLCP);
+    } else {
+        request.SetSslType(SslType::TLS);
+    }
+}
+
+void SetPathPreference(HttpClientRequest &request, const std::string &pathPreference)
+{
+    if (pathPreference == "primaryCellular") {
+        request.SetPathPreference(PathPreference::primaryCellular);
+    } else if (pathPreference == "secondaryCellular") {
+        request.SetPathPreference(PathPreference::secondaryCellular);
+    } else {
+        request.SetPathPreference(PathPreference::autoPath);
+    }
+}
+
+bool SetCustomMethod(HttpClientRequest &request, const std::string &customMethod)
+{
+    if (!customMethod.empty() && customMethod.length() <= MAX_CUSTOMMETHOD_LENGTH) {
+        request.SetMethod(customMethod);
+        return true;
+    }
+    return false;
 }
 
 std::string GetJsonFieldValue(const cJSON* item)
@@ -288,7 +417,7 @@ std::string GetJsonFieldValue(const cJSON* item)
             ss << "null";
             break;
         default:
-            NETSTACK_LOGE("unknown type");
+            break;
     }
     result = ss.str();
     return result;
@@ -336,21 +465,57 @@ void SetHeaderExt(HttpClientRequest &request, const EscapedDataRust& headersObj)
     auto jsonStr = std::string(headersObj.data.data(), headersObj.data.size());
     cJSON *root = cJSON_Parse(jsonStr.c_str());
     if (root == nullptr) {
-        NETSTACK_LOGE("json parse failed");
         return;
     }
     ParseHeaderItems(root, request);
     cJSON_Delete(root);
 }
 
-void SetCertificatePinning(HttpClientRequest &request, const std::string& certPIN)
+void SetQueryParams(HttpClientRequest &request, const EscapedDataRust &queryParams)
 {
+    EscapedData nativeValue = {
+        .dataType = queryParams.data_type,
+        .data = std::string(queryParams.data.data(), queryParams.data.size()),
+    };
+    request.SetQueryParams(nativeValue);
+}
+
+void SetCertificatePinning(HttpClientRequest &request, const rust::vec<CertificatePinningRust> &pins)
+{
+    std::stringstream certPinBuilder;
+    for (const auto &pin : pins) {
+        std::string algorithm = NetStack::CommonUtils::ToLower(
+            std::string(pin.hash_algorithm.data(), pin.hash_algorithm.size()));
+        if (algorithm == "sha-256") {
+            std::string publicKeyHash(pin.public_key_hash.data(), pin.public_key_hash.size());
+            certPinBuilder << "sha256//" << publicKeyHash << ';';
+        }
+    }
+    std::string certPIN = certPinBuilder.str();
     if (certPIN.empty()) {
         return;
     }
-
+    certPIN.pop_back();
     SecureData certificatePinningNative;
     certificatePinningNative.append(certPIN.c_str());
     request.SetCertificatePinning(certificatePinningNative);
+}
+
+void SetValidationCallback(HttpClientRequest &request, rust::Box<ValidationCallbackWrapper> callback)
+{
+    ValidationCallbackWrapper *rawPtr = callback.into_raw();
+    auto shared = std::shared_ptr<ValidationCallbackWrapper>(
+        rawPtr, [](ValidationCallbackWrapper *ptr) { rust::Box<ValidationCallbackWrapper>::from_raw(ptr); });
+    request.SetValidationCallback(
+        [shared](const std::vector<std::string> &pemCerts, const std::string &host, const std::string &ip) -> bool {
+            rust::vec<rust::string> rustPemCerts;
+            rustPemCerts.reserve(pemCerts.size());
+            for (const auto &pemCert : pemCerts) {
+                rustPemCerts.emplace_back(pemCert.data(), pemCert.size());
+            }
+            rust::String rustHost(host);
+            rust::String rustIp(ip);
+            return shared->on_validate(std::move(rustPemCerts), std::move(rustHost), std::move(rustIp));
+        });
 }
 } // namespace OHOS::Request

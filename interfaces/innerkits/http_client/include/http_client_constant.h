@@ -35,6 +35,7 @@ public:
     static const char *const HTTP_METHOD_POST;
     static const char *const HTTP_METHOD_PUT;
     static const char *const HTTP_METHOD_CONNECT;
+    static const char *const HTTP_METHOD_PATCH;
 
     /* default options */
     static const uint32_t DEFAULT_READ_TIMEOUT;
@@ -100,6 +101,19 @@ public:
 
     static const char *const REQUEST_TIME;
     static const char *const RESPONSE_TIME;
+
+    /* connection extra info keys */
+    static const char *const PARAM_KEY_NETWORK_PROTOCOL_NAME;
+    static const char *const PARAM_KEY_TLS_VERSION;
+    static const char *const PARAM_KEY_CIPHER_SUITE;
+    static const char *const PARAM_KEY_LOCAL_ADDRESS;
+    static const char *const PARAM_KEY_REMOTE_ADDRESS;
+    static const char *const PARAM_KEY_LOCAL_PORT;
+    static const char *const PARAM_KEY_REMOTE_PORT;
+    static const char *const PARAM_KEY_IS_REUSED_CONNECTION;
+    static const char *const PARAM_KEY_IS_PROXY_CONNECTION;
+    static const char *const PARAM_KEY_IS_CACHE_HIT;
+    static const char *const PARAM_KEY_REDIRECT_COUNT;
 };
 } // namespace HttpClient
 } // namespace NetStack

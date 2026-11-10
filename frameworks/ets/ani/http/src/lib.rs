@@ -34,6 +34,8 @@ ani_rs::ani_constructor! {
     [
         "requestInner" : http::request,
         "requestInStreamInner" : http::request_in_stream,
+        "requestSync" : http::request_sync,
+        "enableAutoCookie" : http::enable_auto_cookie,
         "destroy" : http::destroy,
 
         "onHeadersReceiveInner" : http::on_headers_receive,

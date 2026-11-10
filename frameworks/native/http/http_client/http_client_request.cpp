@@ -31,6 +31,7 @@ static constexpr const uint32_t HTTP_MIN_PRIORITY = 1;
 static constexpr const uint32_t HTTP_DEFAULT_PRIORITY = 500;
 static constexpr const uint32_t HTTP_MAX_PRIORITY = 1000;
 static constexpr const uint32_t HTTP_DEFAULT_RANGE = 0;
+static constexpr const uint32_t HTTP_DEFAULT_MAX_REDIRECTS = 30;
 
 HttpClientRequest::HttpClientRequest()
     : method_(HttpConstant::HTTP_METHOD_GET),
@@ -44,9 +45,16 @@ HttpClientRequest::HttpClientRequest()
       sslType_(SslType::TLS),
       maxLimit_(HttpConstant::MAX_DATA_LIMIT),
       usingCache_(false),
-      dataType_(HttpDataType::NO_DATA_TYPE)
+      dataType_(HttpDataType::NO_DATA_TYPE),
+      maxRedirects_(HTTP_DEFAULT_MAX_REDIRECTS),
+      reuseConnections_(true),
+      inactivityMs_(0),
+      bodyOrQueryConfigured_(false),
+      pathPreference_(PathPreference::autoPath),
+      partialChain_(-1)
 {
     extraData_.dataType = HttpDataType::NO_DATA_TYPE;
+    queryParams_.dataType = HttpDataType::NO_DATA_TYPE;
 }
 
 void HttpClientRequest::SetURL(const std::string &url)
@@ -69,7 +77,7 @@ bool HttpClientRequest::MethodForGet(const std::string &method)
 bool HttpClientRequest::MethodForPost(const std::string &method)
 {
     return (method == HttpConstant::HTTP_METHOD_POST || method == HttpConstant::HTTP_METHOD_PUT ||
-            method == HttpConstant::HTTP_METHOD_DELETE);
+            method == HttpConstant::HTTP_METHOD_DELETE || method == HttpConstant::HTTP_METHOD_PATCH);
 }
 
 void HttpClientRequest::SetMethod(const std::string &method)
@@ -241,7 +249,12 @@ uint32_t HttpClientRequest::GetMaxLimit() const
 
 void HttpClientRequest::SetHttpProxy(const HttpProxy &proxy)
 {
-    proxy_ = proxy;
+    proxy_.host = proxy.host;
+    proxy_.port = proxy.port;
+    proxy_.exclusions = proxy.exclusions;
+    proxy_.username.assign(proxy.username);
+    proxy_.password.assign(proxy.password);
+    proxy_.tunnel = proxy.tunnel;
 }
 
 const HttpProxy &HttpClientRequest::GetHttpProxy() const
@@ -351,6 +364,11 @@ void HttpClientRequest::SetCanSkipCertVerifyFlag(bool canCertVerify)
     canSkipCertVerify_ = canCertVerify;
 }
 
+void HttpClientRequest::SetValidationCallback(const ValidationCallback &validationCallback)
+{
+    validationCallback_ = validationCallback;
+}
+
 void HttpClientRequest::SetTLSOptions(const TlsOption &tlsOptions)
 {
     tlsOptions_ = tlsOptions;
@@ -403,6 +421,11 @@ const std::string& HttpClientRequest::GetRemoteValidation() const
 bool HttpClientRequest::GetCanSkipCertVerifyFlag() const
 {
     return canSkipCertVerify_;
+}
+
+const ValidationCallback& HttpClientRequest::GetValidationCallback() const
+{
+    return validationCallback_;
 }
 
 const TlsOption& HttpClientRequest::GetTLSOptions() const
@@ -460,6 +483,131 @@ void HttpClientRequest::SetCertificatePinning(const HttpClient::SecureData &cert
 const HttpClient::SecureData& HttpClientRequest::GetCertificatePinning() const
 {
     return certificatePinning_;
+}
+
+void HttpClientRequest::SetMaxRedirects(uint32_t maxRedirects)
+{
+    maxRedirects_ = maxRedirects;
+}
+
+uint32_t HttpClientRequest::GetMaxRedirects() const
+{
+    return maxRedirects_;
+}
+
+void HttpClientRequest::SetSniHostName(const std::string &sniHostName)
+{
+    sniHostName_ = sniHostName;
+}
+
+const std::string &HttpClientRequest::GetSniHostName() const
+{
+    return sniHostName_;
+}
+
+void HttpClientRequest::SetReuseConnections(bool reuseConnections)
+{
+    reuseConnections_ = reuseConnections;
+}
+
+bool HttpClientRequest::GetReuseConnections() const
+{
+    return reuseConnections_;
+}
+
+void HttpClientRequest::SetInactivityMs(uint32_t inactivityMs)
+{
+    inactivityMs_ = inactivityMs;
+}
+
+uint32_t HttpClientRequest::GetInactivityMs() const
+{
+    return inactivityMs_;
+}
+
+void HttpClientRequest::SetBodyOrQueryConfigured(bool bodyOrQueryConfigured)
+{
+    bodyOrQueryConfigured_ = bodyOrQueryConfigured;
+}
+
+bool HttpClientRequest::GetBodyOrQueryConfigured() const
+{
+    return bodyOrQueryConfigured_;
+}
+
+void HttpClientRequest::SetCaData(const std::string &caData)
+{
+    caData_ = caData;
+}
+
+const std::string &HttpClientRequest::GetCaData() const
+{
+    return caData_;
+}
+
+void HttpClientRequest::SetPathPreference(PathPreference pathPreference)
+{
+    pathPreference_ = pathPreference;
+}
+
+PathPreference HttpClientRequest::GetPathPreference() const
+{
+    return pathPreference_;
+}
+
+void HttpClientRequest::SetSocks5Proxy(const Socks5Proxy &socks5Proxy)
+{
+    socks5Proxy_.host = socks5Proxy.host;
+    socks5Proxy_.port = socks5Proxy.port;
+    socks5Proxy_.username.assign(socks5Proxy.username);
+    socks5Proxy_.password.assign(socks5Proxy.password);
+    socks5Proxy_.dnsStrategy = socks5Proxy.dnsStrategy;
+    socks5Proxy_.exclusionList = socks5Proxy.exclusionList;
+}
+
+const Socks5Proxy &HttpClientRequest::GetSocks5Proxy() const
+{
+    return socks5Proxy_;
+}
+
+void HttpClientRequest::SetPartialChain(bool partialChain)
+{
+    partialChain_ = partialChain ? 1 : 0;
+}
+
+int HttpClientRequest::GetPartialChain() const
+{
+    return partialChain_;
+}
+
+void HttpClientRequest::SetPinnedPubkey(const std::string &pubkey)
+{
+    pinnedPubkey_ = pubkey;
+}
+
+std::string HttpClientRequest::GetPinnedPubkey() const
+{
+    return pinnedPubkey_;
+}
+
+void HttpClientRequest::SetQueryParams(const EscapedData &queryParams)
+{
+    queryParams_ = queryParams;
+}
+
+const EscapedData &HttpClientRequest::GetQueryParams() const
+{
+    return queryParams_;
+}
+
+void HttpClientRequest::SetEnableAutoCookie(bool enable)
+{
+    enableAutoCookie_ = enable;
+}
+
+bool HttpClientRequest::GetEnableAutoCookie() const
+{
+    return enableAutoCookie_;
 }
 } // namespace HttpClient
 } // namespace NetStack

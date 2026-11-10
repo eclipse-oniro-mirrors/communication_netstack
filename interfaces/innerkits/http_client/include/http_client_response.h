@@ -242,6 +242,23 @@ public:
      */
     [[nodiscard]] HttpDataType GetExpectDataType() const;
 
+    /**
+     * Set the connection extra info item of the HTTP response.
+     * @param key Key of the extra info item.
+     * @param value Value of the extra info item.
+     */
+    void SetExtraInfoItem(const std::string &key, const std::string &value);
+
+    /**
+     * Get the connection extra info item of the HTTP response by value.
+     * Unlike GetExtraInfoItem(), the result is a copy, so it is always safe to keep it, even when
+     * the default value is a temporary or the item is requested from another thread.
+     * @param key Key of the extra info item.
+     * @param defaultValue Value returned when the key does not exist.
+     * @return The value of the extra info item, or defaultValue when the key does not exist.
+     */
+    [[nodiscard]] std::string GetExtraInfoItem(const std::string &key, const std::string &defaultValue = "") const;
+
 private:
     friend class HttpClientTask;
 
@@ -272,6 +289,7 @@ private:
     PerformanceInfo performanceInfo_;
     std::vector<std::string> setCookie_;
     HttpDataType dataType_ = HttpDataType::NO_DATA_TYPE;
+    std::map<std::string, std::string> extraInfo_;
 };
 } // namespace HttpClient
 } // namespace NetStack

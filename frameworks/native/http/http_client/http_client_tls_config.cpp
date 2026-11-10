@@ -164,4 +164,54 @@ TlsCipherString ConvertCipherSuiteToCipherString(const std::unordered_set<Cipher
     return cipherString;
 }
 
+CipherSuite GetCipherSuiteFromInnerName(const std::string &innerName)
+{
+    for (const auto &suite : CIPHER_SUITE_CONVERTOR) {
+        if (suite.innerName == innerName) {
+            return suite.cipherSuite;
+        }
+    }
+    return CipherSuite::INVALID;
+}
+
+std::string GetStandardNameFromCipherSuite(CipherSuite cipherSuite)
+{
+    for (const auto &suite : CIPHER_SUITE_CONVERTOR) {
+        if (suite.cipherSuite == cipherSuite) {
+            return suite.standardName;
+        }
+    }
+    return {};
+}
+
+std::string ConvertTlsVersionToString(TlsVersion tlsVersion)
+{
+    switch (tlsVersion) {
+        case TlsVersion::TLSv1_0:
+            return "TLS_V_1_0";
+        case TlsVersion::TLSv1_1:
+            return "TLS_V_1_1";
+        case TlsVersion::TLSv1_2:
+            return "TLS_V_1_2";
+        case TlsVersion::TLSv1_3:
+            return "TLS_V_1_3";
+        default:
+            return {};
+    }
+}
+
+TlsVersion ConvertStringToTlsVersion(const std::string &versionStr)
+{
+    if (versionStr == "TLS_V_1_0") {
+        return TlsVersion::TLSv1_0;
+    } else if (versionStr == "TLS_V_1_1") {
+        return TlsVersion::TLSv1_1;
+    } else if (versionStr == "TLS_V_1_2") {
+        return TlsVersion::TLSv1_2;
+    } else if (versionStr == "TLS_V_1_3") {
+        return TlsVersion::TLSv1_3;
+    } else {
+        return TlsVersion::DEFAULT;
+    }
+}
 } // namespace OHOS::NetStack::HttpClient

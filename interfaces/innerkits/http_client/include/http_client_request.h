@@ -19,6 +19,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <functional>
 #include "http_client_secure_data.h"
 #include "http_client_tls_config.h"
 #include "common.h"
@@ -46,9 +47,11 @@ struct HttpProxy {
     std::string host;
     int32_t port;
     std::string exclusions;
+    HttpClient::SecureData username;
+    HttpClient::SecureData password;
     bool tunnel;
 
-    HttpProxy() : host(""), port(0), exclusions(""), tunnel(false) {}
+    HttpProxy() : host(""), port(0), exclusions(""), username(), password(), tunnel(false) {}
 };
 
 struct HttpClientCert {
@@ -61,6 +64,27 @@ struct HttpClientCert {
 enum SslType {
     TLS,
     TLCP
+};
+
+enum class PathPreference {
+    autoPath,
+    primaryCellular,
+    secondaryCellular,
+};
+
+enum class Socks5DnsStrategy {
+    SYSTEM_MODE,
+    PROXY_MODE,
+    UNSPECIFIED,
+};
+
+struct Socks5Proxy {
+    std::string host;
+    int32_t port = 0;
+    HttpClient::SecureData username;
+    HttpClient::SecureData password;
+    Socks5DnsStrategy dnsStrategy = Socks5DnsStrategy::UNSPECIFIED;
+    std::string exclusionList;
 };
 
 struct EscapedData {
@@ -108,6 +132,9 @@ struct CertsPath {
     std::vector<std::string> certPathList;
     std::string certFile;
 };
+
+using ValidationCallback =
+    std::function<bool(const std::vector<std::string>& pemCerts, const std::string& host, const std::string& ip)>;
 
 class HttpClientRequest {
 public:
@@ -268,6 +295,12 @@ public:
     void SetRemoteValidation(const std::string &remoteValidation);
 
     /**
+     * Set the ValidationCallback for the HTTP request.
+     * @param ValidationCallback The ValidationCallback value to be set.
+     */
+    void SetValidationCallback(const ValidationCallback &validationCallback);
+
+    /**
      * Set the TLSOptions for the HTTP request.
      * @param TLSOptions The TLSOptions value to be set.
      */
@@ -424,10 +457,28 @@ public:
     [[nodiscard]] bool GetCanSkipCertVerifyFlag() const;
 
     /**
+     * Set the EnableAutoCookie of the HTTP request.
+     * @param enable Whether to enable auto cookie.
+     */
+    void SetEnableAutoCookie(bool enable);
+
+    /**
+     * Get the EnableAutoCookie of the HTTP request.
+     * @return The EnableAutoCookie of the request.
+     */
+    [[nodiscard]] bool GetEnableAutoCookie() const;
+
+    /**
      * Get the RemoteValidation of the HTTP request.
      * @return The RemoteValidation of the request.
      */
     [[nodiscard]] const std::string& GetRemoteValidation() const;
+
+    /**
+     * Get the ValidationCallback of the HTTP request.
+     * @return The ValidationCallback of the request.
+     */
+    [[nodiscard]] const ValidationCallback& GetValidationCallback() const;
 
     /**
      * Get the TLSOptions of the HTTP request.
@@ -538,6 +589,119 @@ public:
      * @return The Certificate pin of the request.
      */
     const HttpClient::SecureData &GetCertificatePinning() const;
+
+    /**
+     * Set the max redirects of the HTTP request.
+     * @param maxRedirects The max redirects.
+     */
+    void SetMaxRedirects(uint32_t maxRedirects);
+    /**
+     * Get the max redirects of the HTTP request.
+     * @return The max redirects.
+     */
+    [[nodiscard]] uint32_t GetMaxRedirects() const;
+    /**
+     * Set the SNI host name of the HTTP request.
+     * @param sniHostName The SNI host name.
+     */
+    void SetSniHostName(const std::string &sniHostName);
+    /**
+     * Get the SNI host name of the HTTP request.
+     * @return The SNI host name.
+     */
+    [[nodiscard]] const std::string &GetSniHostName() const;
+    /**
+     * Set the reuse connections flag of the HTTP request.
+     * @param reuseConnections Whether to reuse connections.
+     */
+    void SetReuseConnections(bool reuseConnections);
+    /**
+     * Get the reuse connections flag of the HTTP request.
+     * @return Whether to reuse connections.
+     */
+    [[nodiscard]] bool GetReuseConnections() const;
+    /**
+     * Set the inactivity ms of the HTTP request.
+     * @param inactivityMs The inactivity ms.
+     */
+    void SetInactivityMs(uint32_t inactivityMs);
+    /**
+     * Get the inactivity ms of the HTTP request.
+     * @return The inactivity ms.
+     */
+    [[nodiscard]] uint32_t GetInactivityMs() const;
+    /**
+     * Set the body or query configured flag of the HTTP request.
+     * @param bodyOrQueryConfigured Whether body or query params are configured.
+     */
+    void SetBodyOrQueryConfigured(bool bodyOrQueryConfigured);
+    /**
+     * Get the body or query configured flag of the HTTP request.
+     * @return Whether body or query params are configured.
+     */
+    [[nodiscard]] bool GetBodyOrQueryConfigured() const;
+    /**
+     * Set the ca data of the HTTP request.
+     * @param caData The ca data.
+     */
+    void SetCaData(const std::string &caData);
+    /**
+     * Get the ca data of the HTTP request.
+     * @return The ca data.
+     */
+    [[nodiscard]] const std::string &GetCaData() const;
+    /**
+     * Set the path preference of the HTTP request.
+     * @param pathPreference The path preference.
+     */
+    void SetPathPreference(PathPreference pathPreference);
+    /**
+     * Get the path preference of the HTTP request.
+     * @return The path preference.
+     */
+    [[nodiscard]] PathPreference GetPathPreference() const;
+    /**
+     * Set the socks5 proxy of the HTTP request.
+     * @param socks5Proxy The socks5 proxy.
+     */
+    void SetSocks5Proxy(const Socks5Proxy &socks5Proxy);
+    /**
+     * Get the socks5 proxy of the HTTP request.
+     * @return The socks5 proxy.
+     */
+    [[nodiscard]] const Socks5Proxy &GetSocks5Proxy() const;
+    /**
+     * Set the enable partial chain flag of the HTTP request.
+     * @param partialChain Whether to enable partial chain.
+     */
+    void SetPartialChain(bool partialChain);
+    /**
+     * Get the enable partial chain flag of the HTTP request.
+     * @return Whether to enable partial chain.
+     */
+    [[nodiscard]] int GetPartialChain() const;
+
+    /**
+     * Set the pinned pubkey of the HTTP request.
+     * @param pubkey The pinned pubkey to be set.
+     */
+    void SetPinnedPubkey(const std::string &pubkey);
+
+    /**
+     * Get the pinned pubkey of the HTTP request.
+     * @return The pinned pubkey of the request.
+     */
+    [[nodiscard]] std::string GetPinnedPubkey() const;
+    /**
+     * Set the query params of the HTTP request.
+     * @param queryParams The query params (EscapedData: STRING = raw params, OBJECT = JSON object).
+     */
+    void SetQueryParams(const EscapedData &queryParams);
+    /**
+     * Get the query params of the HTTP request.
+     * @return The query params.
+     */
+    [[nodiscard]] const EscapedData &GetQueryParams() const;
 private:
     std::string url_;
     std::string method_;
@@ -564,6 +728,8 @@ private:
     std::string dnsOverHttps_;
     std::string remoteValidation_;
     bool canSkipCertVerify_ = false;
+    bool enableAutoCookie_ = false;
+    ValidationCallback validationCallback_;
     TlsOption tlsOptions_;
     EscapedData extraData_;
     HttpDataType dataType_;
@@ -571,6 +737,17 @@ private:
     std::vector<HttpMultiFormData> multiFormDataList_;
     HttpServerAuthentication serverAuth_;
     HttpClient::SecureData certificatePinning_;
+    uint32_t maxRedirects_;
+    std::string sniHostName_;
+    bool reuseConnections_;
+    uint32_t inactivityMs_;
+    bool bodyOrQueryConfigured_;
+    EscapedData queryParams_;
+    std::string caData_;
+    PathPreference pathPreference_;
+    Socks5Proxy socks5Proxy_;
+    int partialChain_ = -1; // -1: not set, 0: false, 1: true
+    std::string pinnedPubkey_;
 };
 } // namespace HttpClient
 } // namespace NetStack
