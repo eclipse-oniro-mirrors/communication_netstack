@@ -23,6 +23,8 @@ ohos_shared_library("net_websocket") {
 
   branch_protector_ret = "pac_ret"
 
+  version_script = "libnet_websocket.map"
+
   output_extension = "so"
   include_dirs = [
     "$NETSTACK_DIR/interfaces/kits/c/net_websocket/include",

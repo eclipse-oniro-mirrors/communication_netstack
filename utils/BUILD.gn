@@ -43,6 +43,8 @@ ohos_shared_library("stack_utils_common") {
 
   branch_protector_ret = "pac_ret"
 
+  version_script = "libstack_utils_common.map"
+
   cflags = [
     "-D_FORTIFY_SOURCE=2",
     "-O2",

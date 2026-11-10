@@ -99,6 +99,7 @@ ohos_rust_shared_library("websocket_ani") {
     "//third_party/rust/crates/serde/serde:lib"
   ]
   clippy_lints = "none"
+  version_script = "libwebsocket_ani.map"
   part_name = "netstack"
   subsystem_name = "communication"
   output_extension = "so"

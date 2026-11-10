@@ -26,6 +26,7 @@ ohos_rust_shared_library("ylong_http_client") {
   crate_root = "src/lib.rs"
 
   install_images = [ system_base_dir ]
+  version_script = "libylong_http_client.map"
   subsystem_name = "communication"
   part_name = "netstack"
 

@@ -23,6 +23,8 @@ ohos_shared_library("http_interceptor_ndk") {
 
   branch_protector_ret = "pac_ret"
 
+  version_script = "libhttp_interceptor_ndk.map"
+
   output_name = "http_interceptor"
   output_extension = "so"
   include_dirs = [
