@@ -23,6 +23,8 @@ ohos_shared_library("net_http_ndk") {
 
   branch_protector_ret = "pac_ret"
 
+  version_script = "libnet_http.map"
+
   output_name = "net_http"
   output_extension = "so"
   include_dirs = [

@@ -1,0 +1,33 @@
+# Copyright (c) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Rust dylib consumed dynamically by Rust crates (e.g. http_ani via
+# --extern + NEEDED). Rust cross-crate dynamic linkage resolves arbitrary
+# pub/cxxbridge symbols at runtime, so the whole Rust ABI surface is kept:
+#   - _RN*: all v0-mangled Rust symbols (own crate + cxx runtime crate),
+#     immune to crate-hash changes across rebuilds
+#   - cxxbridge1$* / OHOS$*: cxx bridge C-style symbols
+#   - rust_metadata_*: rustc crate metadata for downstream --extern
+# Only non-Rust leaks (C symbols, std/gcov style leftovers) are hidden.
+
+{
+  global:
+    _RN*;
+    _ZN*11netstack_rs*;
+    _ZNK*11netstack_rs*;
+    cxxbridge1$*;
+    OHOS$*;
+    rust_metadata*;
+  local:
+    *;
+};

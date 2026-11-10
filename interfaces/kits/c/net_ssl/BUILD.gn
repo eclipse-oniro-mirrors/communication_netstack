@@ -23,6 +23,8 @@ ohos_shared_library("net_ssl_ndk") {
 
   branch_protector_ret = "pac_ret"
 
+  version_script = "libnet_ssl.map"
+
   output_name = "net_ssl"
   output_extension = "so"
   include_dirs = [

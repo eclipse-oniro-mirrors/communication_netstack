@@ -101,6 +101,7 @@ ohos_rust_shared_library("netstack_rs") {
     "bounds_checking_function:libsec_shared",
   ]
 
+  version_script = "libnetstack_rs.map"
   part_name = "netstack"
   subsystem_name = "communication"
 }

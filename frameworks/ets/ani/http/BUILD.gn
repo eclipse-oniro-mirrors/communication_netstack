@@ -57,6 +57,7 @@ ohos_rust_shared_library("http_ani") {
 
   clippy_lints = "none"
 
+  version_script = "libhttp_ani.map"
   part_name = "netstack"
   subsystem_name = "communication"
   output_extension = "so"
