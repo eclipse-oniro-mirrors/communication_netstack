@@ -347,6 +347,7 @@ private:
     std::queue<LoadBytes> ulBytes_;
     curl_slist *curlHeaderList_ = nullptr;
     Timing::TimerMap timerMap_;
+    mutable std::mutex performanceTimingMapLock_;
     std::map<std::string, double> performanceTimingMap_;
     curl_mime *multipart_ = nullptr;
     CertsPath certsPath_;
