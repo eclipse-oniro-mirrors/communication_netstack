@@ -54,7 +54,7 @@
 | 生命周期/napi_ref/UAF 高发区 | [docs/knowledge/expert/lifecycle-uaf-pitfalls.md](docs/knowledge/expert/lifecycle-uaf-pitfalls.md) |
 | API 兼容性红线 | [docs/knowledge/expert/api-compatibility-constraints.md](docs/knowledge/expert/api-compatibility-constraints.md) |
 | 历史高危修复与 revert 教训 | [docs/knowledge/expert/historical-failures.md](docs/knowledge/expert/historical-failures.md) |
-| 编译与测试命令 | [docs/knowledge/verify/build-and-test.md](docs/knowledge/verify/build-and-test.md) |
+| 构建与测试命令 | [docs/knowledge/verify/build-and-test.md](docs/knowledge/verify/build-and-test.md) |
 | 验证循环与 Done 定义 | [docs/knowledge/verify/verification-loop.md](docs/knowledge/verify/verification-loop.md) |
 
 ## 4. 词汇触发路由
@@ -123,18 +123,37 @@ Agent 在编辑任何文件前，**必须在回复中显式回答以下三项**�
 
 ## 7. 构建和验证
 
-### 7.1 编译
+### 7.1 构建（裸脚本 `build_system.sh` + `CBuild` 分布式构建，不使用 `build.sh`）
+
+极速空间构建机上直接用裸脚本构建，由 `CBuild` 客户端提交分布式构建（`build.sh --product-name rk3568` 那套命令在本环境不可用）：
 
 ```bash
-# 组件整体
-./build.sh --product-name rk3568 --build-target http --ccache
-# innerkits 目标
-./build.sh --product-name rk3568 --build-target http_client --ccache
-./build.sh --product-name rk3568 --build-target websocket_native --ccache
-./build.sh --product-name rk3568 --build-target net_ssl --ccache
+cd /srv/workspace/<基线工作区>/code
+CBuild ./build_system.sh --abi-type generic_generic_arm_64only --device-type general_all_phone_standard \
+  --ccache --build-target netstack --build-variant root
 ```
 
+- `--build-target` 可重复传多个目标，目标名不带前导 `//`；子目标（`http_client`、`websocket_native`、`net_ssl` 等）同样用 `--build-target` 指定。
+- 分布式构建排队 + 编译耗时较长（空 out 全量约 45 分钟以上）：**等待/超时时间直接拉长**，后台执行并轮询日志（`nohup ... > /tmp/build.log 2>&1 &`），不要因等待超时中途终止。
+- 成功标记：`=====build generic_generic_arm_64only/general_all_phone_standard successful.=====`
+
 ### 7.2 按任务类型的验证表（改动 → 必跑测试）
+
+**怎么跑（DT 框架 `test/testfwk/developer_test`，参考 dt-test 约定）**
+
+```bash
+# 1) 先编测试产物：§7.1 同一条命令，把 --build-target 换成下表中的测试 target
+# 2) 再跑（框架固定在 <源码根>/test/testfwk/developer_test 下执行）
+cd /srv/workspace/<基线工作区>/code/test/testfwk/developer_test
+./start.sh run -t UT -p system_arm64_default -tp netstack  # 整部件
+./start.sh run -t UT -p system_arm64_default -tp netstack -ts http_unittest  # 单套件
+./start.sh run -t FUZZ -p system_arm64_default -tp netstack -ts SocketExecFuzzTest  # 模糊
+```
+
+- `-p` 非交互必传 `system_arm64_default`（不传默认 phone 会解析错 out 目录；本工作区经 `out/ohos_config.json` 兜底到 `out/generic_generic_arm_64only/general_all_phone_standard`）；`-t` 取 `UT`/`FUZZ`；`-ts` 多套件在 native 侧用逗号分隔（分号只对 HAP/XTS 生效）。
+- 失败用例从 `reports/<时间戳>/summary_report.xml` 取 `classname`+`name`，用 `-tc Class.case` 重跑（`--retry` 只在交互模式有效，一次性调用必报 No history command exsit）。
+- 结论看 `grep "Summary result" <log>`；设备先 `hdc list targets` 可见再跑（`config/user_config.xml` 未配 ip/port 时用它），看不到设备先查设备/hdc server，不要反复重跑。
+- 整部件 UT / 任何 FUZZ 必须后台：`setsid nohup ./start.sh run ... > /tmp/dt.log 2>&1 < /dev/null &`（不用 setsid 会被工具超时连带杀掉），轮询 `pgrep -f "python3 -m main"`；单次执行超 ~61 分钟会被宿主静默终止，长任务按 ≤6 模块分批（FUZZ 每 fuzzer 默认 300s）。
 
 | 改动区域 | 必跑测试 target |
 |---|---|
@@ -150,7 +169,7 @@ Agent 在编辑任何文件前，**必须在回复中显式回答以下三项**�
 
 ### 7.3 Done 定义（全部满足才算完成）
 
-1. 编译成功（上述命令无错误）。
+1. 构建成功（§7.1 命令无错误）。
 2. §7.2 对应测试全部通过。
 3. LSP/静态检查无新增 error。
 4. 未破坏 API 兼容（`interfaces/` 基线，见 [api-compatibility-constraints.md](docs/knowledge/expert/api-compatibility-constraints.md)）。
@@ -179,5 +198,5 @@ docs/knowledge/
 - **新失效模式**（线上/测试新发现的崩溃形态、revert 教训）必须回写 `historical-failures.md`，同时在 `crash-routing.md` 增加路由条目。
 - 新增目录/模块/测试 target：更新对应 `code_map/` 文档与本文 §2 表格。
 - 新增术语：更新 `vocabulary-routing.md` 与本文 §4 表格。
-- 修改编译命令/测试 target：同步 `build-and-test.md`、`verification-loop.md` 与本文 §7。
+- 修改构建命令/测试 target：同步 `build-and-test.md`、`verification-loop.md` 与本文 §7。
 - 知识文档只增不删；过期内容标注 `已废弃` 并保留原文（历史教训不可丢弃）。
