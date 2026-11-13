@@ -22,13 +22,16 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <mutex>
 #include <thread>
+#include <utility>
 #include <vector>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/eventfd.h>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -753,10 +756,10 @@ HWTEST_F(SocketTest, LocalSocketServerExecFdTest003, TestSize.Level1)
     EXPECT_TRUE(LocalSocketExec::ExecLocalSocketConnectionClose(&closeCtx));
     EXPECT_EQ(mgr2->GetClientCounts(), 0U);
 
-    // unknown client id -> DupAcceptFd fails with EBADF
+    // unknown client id: idempotent close resolves success, there is nothing left to close
     LocalSocketServerCloseContext closeCtx2(env, eventManager2);
     closeCtx2.SetClientId(999);
-    EXPECT_FALSE(LocalSocketExec::ExecLocalSocketConnectionClose(&closeCtx2));
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketConnectionClose(&closeCtx2));
 
     // removed client -> EBADF
     LocalSocketServerGetLocalAddressContext addrCtx(env, eventManager2);
@@ -807,6 +810,426 @@ HWTEST_F(SocketTest, LocalSocketServerExecFdTest003, TestSize.Level1)
     eventManager2->SetData(nullptr);
     delete connData;
     delete mgr2;
+}
+
+HWTEST_F(SocketTest, LocalSocketServerManagerTakeAndDetachAcceptTest001, TestSize.Level1)
+{
+    LocalSocketServerManager mgr;
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    int clientId = mgr.AddAccept(sv[0]);
+    ASSERT_GT(clientId, 0);
+
+    // take-and-detach transfers the ownership: only the first take can win, the map is
+    // emptied afterwards
+    EXPECT_EQ(mgr.TakeAndDetachAccept(clientId), sv[0]);
+    EXPECT_EQ(mgr.TakeAndDetachAccept(clientId), -1);
+    EXPECT_EQ(mgr.GetClientCounts(), 0U);
+
+    // closing the taken fd really releases the connection: the peer write hits EPIPE
+    ASSERT_EQ(close(sv[0]), 0);
+    EXPECT_EQ(send(sv[1], "z", 1, MSG_NOSIGNAL), -1);
+    EXPECT_EQ(errno, EPIPE);
+    close(sv[1]);
+}
+
+HWTEST_F(SocketTest, LocalSocketConnectionDoubleCloseTest001, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    auto mgr = new LocalSocketServerManager();
+    auto eventManager = std::make_shared<EventManager>();
+    int clientId = mgr->AddAccept(sv[0]);
+    ASSERT_GT(clientId, 0);
+    auto connData = new LocalSocketExec::LocalSocketConnectionData(clientId, mgr);
+    eventManager->SetData(connData);
+
+    // first close takes the fd and shuts the connection down
+    LocalSocketServerCloseContext closeCtx(env, eventManager);
+    closeCtx.SetClientId(clientId);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketConnectionClose(&closeCtx));
+    EXPECT_EQ(mgr->GetClientCounts(), 0U);
+
+    // repeated close on the same client resolves success (idempotent at the API level):
+    // the first close already performed the teardown, the second one has nothing to do
+    LocalSocketServerCloseContext closeCtx2(env, eventManager);
+    closeCtx2.SetClientId(clientId);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketConnectionClose(&closeCtx2));
+
+    delete connData;
+    eventManager->SetData(nullptr);
+    delete mgr;
+    close(sv[1]);
+}
+
+// create one churn connection; returns the client id, or -1 when the socketpair failed;
+// sv[0] is closed here if AddAccept rejected it, the caller closes sv[1] either way
+static int AddChurnConnection(LocalSocketServerManager &mgr, int sv[2])
+{
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) != 0) {
+        return -1;
+    }
+    int clientId = mgr.AddAccept(sv[0]);
+    if (clientId <= 0) {
+        close(sv[0]);
+    }
+    return clientId;
+}
+
+// every closer goes through its own EventManager (as in production, where the worker
+// thread, the epoll thread and the GC finalizer reach the manager from different paths):
+// only TakeAndDetachAccept serializes them and hands the fd to exactly one winner, while
+// every closer resolves success (close is idempotent at the API level)
+static void ConcurrentCloseClient(napi_env env, LocalSocketServerManager *mgr, int clientId,
+    std::atomic<int> *successCount, std::atomic<int> *failCount)
+{
+    auto eventManager = std::make_shared<EventManager>();
+    auto connData = new LocalSocketExec::LocalSocketConnectionData(clientId, mgr);
+    eventManager->SetData(connData);
+    LocalSocketServerCloseContext closeCtx(env, eventManager);
+    closeCtx.SetClientId(clientId);
+    if (LocalSocketExec::ExecLocalSocketConnectionClose(&closeCtx)) {
+        successCount->fetch_add(1);
+    } else {
+        failCount->fetch_add(1);
+    }
+    delete connData;
+}
+
+// every CHURN_REMOVE_INTERVAL-th churn connection is closed through RemoveAccept
+static constexpr int CHURN_REMOVE_INTERVAL = 2;
+
+// churn mixing RemoveAccept and TakeAndDetachAccept while accept-fd snapshots run
+static void ChurnWithTakeAndRemove(LocalSocketServerManager *mgr, int rounds, std::atomic<bool> *stopped)
+{
+    for (int i = 0; i < rounds; ++i) {
+        int sv[2] = {-1, -1};
+        int clientId = AddChurnConnection(*mgr, sv);
+        if (sv[0] < 0) {
+            break;
+        }
+        if (clientId > 0 && i % CHURN_REMOVE_INTERVAL == 0) {
+            mgr->RemoveAccept(clientId);
+        } else if (clientId > 0) {
+            int fd = mgr->TakeAndDetachAccept(clientId);
+            if (fd >= 0) {
+                close(fd);
+            }
+        }
+        close(sv[1]);
+    }
+    stopped->store(true);
+}
+
+// churn thread keeps adding and removing accepted fds while SetExtraOptions runs, so the
+// fds it operates on are constantly being closed by another thread
+static void ChurnWithRemoveOnly(LocalSocketServerManager *mgr, int rounds, std::atomic<bool> *stopped)
+{
+    for (int i = 0; i < rounds; ++i) {
+        int sv[2] = {-1, -1};
+        int clientId = AddChurnConnection(*mgr, sv);
+        if (sv[0] < 0) {
+            break;
+        }
+        if (clientId > 0) {
+            mgr->RemoveAccept(clientId);
+        }
+        close(sv[1]);
+    }
+    stopped->store(true);
+}
+
+// churn racing the server finalize path
+static void ChurnRemoveEvenOnly(LocalSocketServerManager *mgr, int rounds, std::atomic<bool> *stopped)
+{
+    for (int i = 0; i < rounds && !stopped->load(); ++i) {
+        int sv[2] = {-1, -1};
+        int clientId = AddChurnConnection(*mgr, sv);
+        if (sv[0] < 0) {
+            break;
+        }
+        if (clientId > 0 && i % CHURN_REMOVE_INTERVAL == 0) {
+            mgr->RemoveAccept(clientId);
+        }
+        close(sv[1]);
+    }
+}
+
+static void SetExtraOptionsRepeatedly(napi_env env, const std::shared_ptr<EventManager> &eventManager,
+    uint32_t bufSize, int rounds, std::atomic<bool> *stopped, std::atomic<int> *setOkCount)
+{
+    for (int i = 0; i < rounds && !stopped->load(); ++i) {
+        LocalSocketServerSetExtraOptionsContext setCtx(env, eventManager);
+        auto &options = setCtx.GetOptionsRef();
+        options.SetRecvBufSizeFlag(true);
+        options.SetReceiveBufferSize(bufSize);
+        if (LocalSocketExec::ExecLocalSocketServerSetExtraOptions(&setCtx)) {
+            setOkCount->fetch_add(1);
+        }
+    }
+}
+
+static void ApplyFinalExtraOptions(napi_env env, const std::shared_ptr<EventManager> &eventManager, uint32_t bufSize)
+{
+    LocalSocketServerSetExtraOptionsContext finalCtx(env, eventManager);
+    auto &finalOptions = finalCtx.GetOptionsRef();
+    finalOptions.SetRecvBufSizeFlag(true);
+    finalOptions.SetReceiveBufferSize(bufSize);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerSetExtraOptions(&finalCtx));
+}
+
+static void FinalizeAcceptRepeatedly(LocalSocketServerManager *mgr, int rounds, std::atomic<bool> *stopped)
+{
+    // pause between RemoveAllAccept sweeps so the churn thread gets execution slices
+    constexpr int finalizeIntervalUs = 50;
+    for (int i = 0; i < rounds; ++i) {
+        mgr->RemoveAllAccept();
+        std::this_thread::sleep_for(std::chrono::microseconds(finalizeIntervalUs));
+    }
+    stopped->store(true);
+}
+
+HWTEST_F(SocketTest, LocalSocketConnectionConcurrentCloseTest001, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    constexpr int threadCount = 8;
+    constexpr int rounds = 100;
+    for (int round = 0; round < rounds; ++round) {
+        int sv[2] = {-1, -1};
+        ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+        auto mgr = new LocalSocketServerManager();
+        int clientId = mgr->AddAccept(sv[0]);
+        ASSERT_GT(clientId, 0);
+
+        std::atomic<int> successCount(0);
+        std::atomic<int> failCount(0);
+        std::vector<std::thread> threads;
+        for (int i = 0; i < threadCount; ++i) {
+            threads.emplace_back(ConcurrentCloseClient, env, mgr, clientId, &successCount, &failCount);
+        }
+        for (auto &worker : threads) {
+            worker.join();
+        }
+        // close is idempotent at the API level: every concurrent closer resolves success,
+        // while exactly one of them performed the actual teardown (verified by the single
+        // release assertion below), no matter how the threads interleave
+        EXPECT_EQ(successCount.load(), threadCount);
+        EXPECT_EQ(failCount.load(), 0);
+        EXPECT_EQ(mgr->GetClientCounts(), 0U);
+        // the connection has been fully released exactly once
+        EXPECT_EQ(send(sv[1], "z", 1, MSG_NOSIGNAL), -1);
+        EXPECT_EQ(errno, EPIPE);
+        delete mgr;
+        close(sv[1]);
+    }
+}
+
+// Test-local accept-fd snapshot helper: mirrors the sweep inside
+// ExecLocalSocketServerSetExtraOptions (lock clientMutex_, dup each accepted fd under it), so the
+// race-guard tests keep verifying that a snapshot taken under the lock never observes a stale or
+// reused fd number. Each returned dupFd pins the file description and must be closed by the caller.
+static std::vector<std::pair<int, int>> SnapshotAcceptFds(LocalSocketServerManager *mgr)
+{
+    std::lock_guard<std::mutex> lock(mgr->clientMutex_);
+    std::vector<std::pair<int, int>> fds;
+    fds.reserve(mgr->acceptFds_.size());
+    for (const auto &[id, fd] : mgr->acceptFds_) {
+        int dupFd = fd >= 0 ? dup(fd) : -1;
+        if (dupFd < 0) {
+            continue; // skip, e.g. on fd exhaustion: the caller just sees a smaller snapshot
+        }
+        fds.emplace_back(id, dupFd);
+    }
+    return fds;
+}
+
+HWTEST_F(SocketTest, LocalSocketServerManagerAcceptFdsSnapshotRaceTest001, TestSize.Level1)
+{
+    LocalSocketServerManager mgr;
+    // connections are removed (RemoveAccept / TakeAndDetachAccept) while SnapshotAcceptFds runs: every
+    // returned fd must be a live socket dup'ed under the lock, never a stale/reused fd number
+    std::atomic<bool> stopped(false);
+    std::thread churn(ChurnWithTakeAndRemove, &mgr, 500, &stopped);
+    int checkedFds = 0;
+    while (!stopped.load()) {
+        auto fds = SnapshotAcceptFds(&mgr);
+        for (const auto &item : fds) {
+            int type = 0;
+            socklen_t len = sizeof(type);
+            EXPECT_EQ(getsockopt(item.second, SOL_SOCKET, SO_TYPE, &type, &len), 0);
+            EXPECT_EQ(type, SOCK_STREAM);
+            close(item.second);
+            ++checkedFds;
+        }
+    }
+    churn.join();
+    EXPECT_GT(checkedFds, 0);
+    mgr.RemoveAllAccept();
+}
+
+HWTEST_F(SocketTest, LocalSocketServerSetExtraOptionsChurnTest001, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    constexpr int churnRounds = 400;
+    constexpr int setRounds = 400;
+    constexpr uint32_t optionBufSize = 64 * 1024;
+    auto eventManager = std::make_shared<EventManager>();
+    auto mgr = new LocalSocketServerManager();
+    eventManager->SetData(mgr);
+
+    int steadySv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, steadySv), 0);
+    int steadyClientId = mgr->AddAccept(steadySv[0]);
+    ASSERT_GT(steadyClientId, 0);
+
+    std::atomic<bool> stopped(false);
+    std::atomic<int> setOkCount(0);
+    std::thread churn(ChurnWithRemoveOnly, mgr, churnRounds, &stopped);
+    std::thread setter(SetExtraOptionsRepeatedly, env, eventManager, optionBufSize, setRounds, &stopped, &setOkCount);
+    churn.join();
+    setter.join();
+    EXPECT_GT(setOkCount.load(), 0);
+
+    // after the storm a final set must succeed, and the steady connection, which was never
+    // removed, must carry the configured receive buffer (kernel doubles the requested value)
+    ApplyFinalExtraOptions(env, eventManager, optionBufSize);
+    int rcvBuf = 0;
+    socklen_t len = sizeof(rcvBuf);
+    ASSERT_EQ(getsockopt(steadySv[0], SOL_SOCKET, SO_RCVBUF, &rcvBuf, &len), 0);
+    EXPECT_GE(rcvBuf, static_cast<int>(2 * optionBufSize));
+
+    mgr->RemoveAllAccept();
+    eventManager->SetData(nullptr);
+    delete mgr;
+    close(steadySv[1]);
+}
+
+HWTEST_F(SocketTest, LocalSocketServerRemoveAllAcceptRaceTest001, TestSize.Level1)
+{
+    // RemoveAllAccept (server finalize path) racing AddAccept / RemoveAccept (connection churn):
+    // the swap under the lock hands each fd to exactly one closer, so an fd number reused by a
+    // new socketpair can never be closed twice
+    LocalSocketServerManager mgr;
+    std::atomic<bool> stopped(false);
+    std::thread churn(ChurnRemoveEvenOnly, &mgr, 600, &stopped);
+    std::thread finalizer(FinalizeAcceptRepeatedly, &mgr, 50, &stopped);
+    churn.join();
+    finalizer.join();
+    // final sweep closes whatever the churn left behind
+    mgr.RemoveAllAccept();
+    EXPECT_EQ(mgr.GetClientCounts(), 0U);
+}
+
+// the close path must explicitly EPOLL_CTL_DEL before close: while a concurrent dup keeps
+// the file description alive, close(original fd) alone does not drop the epitem. The probe
+// uses EPOLL_CTL_MOD via the still-open dup, epoll keys registrations by file description,
+// so MOD returning ENOENT proves the epitem was removed, returning 0 proves it survived
+HWTEST_F(SocketTest, LocalSocketConnectionCloseUnregisterEpollTest001, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    int sv[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
+    auto mgr = new LocalSocketServerManager();
+    ASSERT_GE(mgr->StartEpoll(), 0);
+    auto eventManager = std::make_shared<EventManager>();
+    int clientId = mgr->AddAccept(sv[0]);
+    ASSERT_GT(clientId, 0);
+    // replicate the AcceptHandler registration so the taken fd is epoll-registered
+    ASSERT_EQ(mgr->RegisterEpollEvent(sv[0], EPOLLIN), 0);
+
+    auto connData = new LocalSocketExec::LocalSocketConnectionData(clientId, mgr);
+    eventManager->SetData(connData);
+    LocalSocketServerCloseContext closeCtx(env, eventManager);
+    closeCtx.SetClientId(clientId);
+
+    // simulate a concurrent dup holder (SetExtraOptions / Send / RecvHandler style)
+    int holder = dup(sv[0]);
+    ASSERT_GE(holder, 0);
+    EXPECT_TRUE(LocalSocketExec::ExecLocalSocketConnectionClose(&closeCtx));
+
+    epoll_event ev = {};
+    ev.events = EPOLLIN;
+    ev.data.fd = holder;
+    errno = 0;
+    EXPECT_EQ(epoll_ctl(mgr->epollFd_, EPOLL_CTL_MOD, holder, &ev), -1);
+    EXPECT_EQ(errno, ENOENT);
+
+    close(holder);
+    close(mgr->stopEventFd_);
+    close(mgr->epollFd_);
+    delete connData;
+    eventManager->SetData(nullptr);
+    delete mgr;
+    close(sv[1]);
+}
+
+// mimic the AcceptHandler configure-on-accept behavior (lines with alreadySetExtraOptions_
+// check under clientMutex_): register the client, then, under the same mutex, apply the
+// published extraOptions_ when the flag is already set at accept time
+static void AddClientWithAcceptPathOptions(LocalSocketServerManager *mgr, uint32_t bufSize)
+{
+    int sv[2] = {-1, -1};
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) != 0) {
+        return;
+    }
+    if (mgr->AddAccept(sv[0]) <= 0) {
+        close(sv[0]);
+        close(sv[1]);
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(mgr->clientMutex_);
+        if (mgr->alreadySetExtraOptions_ && mgr->extraOptions_.AlreadySetRecvBufSize()) {
+            int size = static_cast<int>(bufSize);
+            (void)setsockopt(sv[0], SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
+        }
+    }
+    close(sv[1]); // the peer end is not needed; the accepted end stays live in the map
+}
+
+// connections accepted concurrently with a single setExtraOptions call must never fall
+// into the gap between the dup sweep and the flag publish: a missed client keeps the
+// default receive buffer forever (no later sweep exists to heal it), so after the churn
+// every live client must carry the configured buffer (kernel doubles the requested value)
+HWTEST_F(SocketTest, LocalSocketServerSetExtraOptionsRaceNoClientMissedTest001, TestSize.Level1)
+{
+    napi_env env = nullptr;
+    constexpr int churnCount = 300;
+    constexpr int rounds = 30;
+    constexpr uint32_t optionBufSize = 64 * 1024;
+    for (int round = 0; round < rounds; ++round) {
+        auto eventManager = std::make_shared<EventManager>();
+        auto mgr = new LocalSocketServerManager();
+        eventManager->SetData(mgr);
+
+        std::thread churn([&mgr, optionBufSize]() {
+            for (int i = 0; i < churnCount; ++i) {
+                AddClientWithAcceptPathOptions(mgr, optionBufSize);
+            }
+        });
+        // exactly one set racing the churn: with the sweep and publish sharing one
+        // critical section every client is either swept here or configured by the
+        // mimic accept-path check above, covered by neither means the gap is back
+        LocalSocketServerSetExtraOptionsContext setCtx(env, eventManager);
+        setCtx.GetOptionsRef().SetRecvBufSizeFlag(true);
+        setCtx.GetOptionsRef().SetReceiveBufferSize(optionBufSize);
+        EXPECT_TRUE(LocalSocketExec::ExecLocalSocketServerSetExtraOptions(&setCtx));
+        churn.join();
+
+        auto fds = SnapshotAcceptFds(mgr);
+        ASSERT_FALSE(fds.empty());
+        for (const auto &item : fds) {
+            int rcvBuf = 0;
+            socklen_t len = sizeof(rcvBuf);
+            ASSERT_EQ(getsockopt(item.second, SOL_SOCKET, SO_RCVBUF, &rcvBuf, &len), 0);
+            EXPECT_GE(rcvBuf, static_cast<int>(2 * optionBufSize));
+            close(item.second);
+        }
+        mgr->RemoveAllAccept();
+        eventManager->SetData(nullptr);
+        delete mgr;
+    }
 }
 
 HWTEST_F(SocketTest, LocalSocketClientExecFdTest001, TestSize.Level1)

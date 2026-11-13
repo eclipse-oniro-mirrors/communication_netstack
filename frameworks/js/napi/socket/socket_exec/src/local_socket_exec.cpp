@@ -1341,15 +1341,38 @@ bool ExecLocalSocketServerSetExtraOptions(LocalSocketServerSetExtraOptionsContex
     if (serverManager == nullptr) {
         return false;
     }
-    std::lock_guard<std::mutex> lock(serverManager->clientMutex_);
-    for (const auto &[id, fd] : serverManager->acceptFds_) {
-        if (!SetLocalSocketOptions(fd, context->GetOptionsRef())) {
-            context->SetErrorCode(errno);
-            return false;
+    bool allSetOk = true;
+    int firstErr = 0;
+    {
+        std::lock_guard<std::mutex> lock(serverManager->clientMutex_);
+        for (const auto &[id, fd] : serverManager->acceptFds_) {
+            int dupFd = fd >= 0 ? dup(fd) : -1;
+            if (dupFd < 0) {
+                NETSTACK_LOGE("dup accept fd failed when setting extra options, clientId: %{public}d, "
+                              "fd: %{public}d, errno is %{public}d", id, fd, errno);
+                allSetOk = false;
+                if (firstErr == 0) {
+                    firstErr = errno;
+                }
+                continue;
+            }
+            if (!SetLocalSocketOptions(dupFd, context->GetOptionsRef())) {
+                allSetOk = false;
+                if (firstErr == 0) {
+                    firstErr = errno;
+                }
+            }
+            close(dupFd);
+        }
+        if (allSetOk) {
+            serverManager->extraOptions_ = context->GetOptionsRef();
+            serverManager->alreadySetExtraOptions_ = true;
         }
     }
-    serverManager->extraOptions_ = context->GetOptionsRef();
-    serverManager->alreadySetExtraOptions_ = true;
+    if (!allSetOk) {
+        context->SetErrorCode(firstErr);
+        return false;
+    }
     return true;
 }
 
@@ -1447,7 +1470,7 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
         NETSTACK_LOGE("connection close callback reinterpret cast failed");
         return false;
     }
-    int acceptFd = data->serverManager_->DupAcceptFd(context->GetClientId());
+    int acceptFd = data->serverManager_->TakeAndDetachAccept(context->GetClientId());
     if (acceptFd < 0) {
         NETSTACK_LOGE("socket invalid, fd: %{public}d", acceptFd);
         context->SetErrorCode(EBADF);
@@ -1457,9 +1480,11 @@ bool ExecLocalSocketConnectionClose(LocalSocketServerCloseContext *context)
     if (shutdown(acceptFd, SHUT_RDWR) != 0) {
         NETSTACK_LOGE("socket shutdown failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
     }
-    close(acceptFd);
-    data->serverManager_->RemoveAccept(context->GetClientId());
-    NETSTACK_LOGI("sock closed success");
+    if (close(acceptFd) < 0) {
+        NETSTACK_LOGE("sock closed failed, socket is %{public}d, errno is %{public}d", acceptFd, errno);
+    } else {
+        NETSTACK_LOGI("sock %{public}d closed success", acceptFd);
+    }
     return true;
 }
 
