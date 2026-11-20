@@ -485,7 +485,7 @@ export default namespace socket {
         keepAlive?: boolean;
         OOBInline?: boolean;
         TCPNoDelay?: boolean;
-        socketLinger?: SocketLingerOptionsInner;
+        socketLinger?: SocketLingerOptions;
         tcpFastOpen?: boolean;
     }
 
