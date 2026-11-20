@@ -59,6 +59,7 @@ ohos_unittest("netstack_network_profiler_utils_test") {
     "ipc:ipc_single",
     "napi:ace_napi",
     "time_service:time_client",
+    "samgr:samgr_proxy",
   ]
 
   deps = [ "$NETSTACK_DIR/utils/napi_utils:napi_utils" ]
