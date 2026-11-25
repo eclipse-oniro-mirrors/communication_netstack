@@ -187,6 +187,8 @@ private:
 
     static void ApplyContinueConnectNetworkInterceptor(napi_env env, InitialRequestInterceptorHandle *handle);
     static void SetCurlPostFields(CURL *easyHander, const void *data, size_t length);
+    static void ApplyBodyToCurlHandle(CURL *easyHander, RequestContext *context);
+    static std::string BuildHeaderLine(const std::string &key, const std::string &value);
     static void ApplyBlockConnectNetworkInterceptor(napi_env env, InitialRequestInterceptorHandle *handle);
     static napi_value CreateRequestContextConnectNetworkInterceptor(napi_env env, RequestContext *context);
     static napi_value CreateResponseContextConnectNetworkInterceptor(napi_env env, RequestContext *context);

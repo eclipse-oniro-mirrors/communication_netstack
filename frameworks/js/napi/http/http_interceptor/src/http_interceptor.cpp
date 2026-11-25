@@ -1146,6 +1146,28 @@ void HttpInterceptor::SetCurlPostFields(CURL *easyHander, const void *data, size
     curl_easy_setopt(easyHander, CURLOPT_POSTFIELDSIZE, length);
 }
 
+void HttpInterceptor::ApplyBodyToCurlHandle(CURL *easyHander, RequestContext *context)
+{
+    if (easyHander == nullptr || context == nullptr) {
+        return;
+    }
+    // libcurl only stores the pointer given to CURLOPT_POSTFIELDS and reads the buffer on the worker thread after
+    // this callback has returned, so the buffer must outlive the transfer. Point it at the body owned by
+    // RequestContext instead of at a local string, which dies when this function returns.
+    const std::string &body = context->options.GetBody();
+    SetCurlPostFields(easyHander, body.c_str(), body.size());
+}
+
+std::string HttpInterceptor::BuildHeaderLine(const std::string &key, const std::string &value)
+{
+    if (value.empty()) {
+        // "Key;" makes libcurl send the header with an empty value, which is what the normal request path does.
+        // "Key: " would be parsed as a request to drop the header instead.
+        return key + HttpConstant::HTTP_HEADER_BLANK_SEPARATOR;
+    }
+    return key + HttpConstant::HTTP_HEADER_SEPARATOR + " " + value;
+}
+
 // ConnectNetworkInterceptor
 void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, InitialRequestInterceptorHandle *handle)
 {
@@ -1165,7 +1187,7 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
         for (const auto &key : headerKeys) {
             std::string value =
                 NapiUtils::GetStringFromValueUtf8(env, NapiUtils::GetNamedProperty(env, newHeadObj, key.c_str()));
-            std::string headerLine = key + ": " + value;
+            std::string headerLine = BuildHeaderLine(key, value);
             headers = curl_slist_append(headers, headerLine.c_str());
             handle->context->options.SetHeader(key, value);
         }
@@ -1178,15 +1200,15 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
         napi_valuetype bodyType = NapiUtils::GetValueType(env, bodyValue);
         if (bodyType == napi_string) {
             std::string bodyStr = NapiUtils::GetStringFromValueUtf8(env, bodyValue);
-            SetCurlPostFields(easyHander, bodyStr.c_str(), bodyStr.size());
             handle->context->options.ReplaceBody(bodyStr.data(), bodyStr.size());
-            NETSTACK_LOGD("updated string body, length=%{public}zu", bodyStr.size());
+            ApplyBodyToCurlHandle(easyHander, handle->context);
+            NETSTACK_LOGD("updated string body, length=%{public}zu", handle->context->options.GetBody().size());
         } else if (NapiUtils::ValueIsArrayBuffer(env, bodyValue)) {
             size_t bufferLength = 0;
             void *bufferData = NapiUtils::GetInfoFromArrayBufferValue(env, bodyValue, &bufferLength);
             if (bufferData != nullptr && bufferLength > 0) {
-                SetCurlPostFields(easyHander, bufferData, bufferLength);
                 handle->context->options.ReplaceBody(bufferData, bufferLength);
+                ApplyBodyToCurlHandle(easyHander, handle->context);
             } else {
                 INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "invalid array buffer data or length");
             }
@@ -1194,8 +1216,8 @@ void HttpInterceptor::ApplyContinueConnectNetworkInterceptor(napi_env env, Initi
             INTERCEPTOR_TRACE_ERROR("CONNECT_NETWORK", "unsupported body type");
         }
     } else {
-        SetCurlPostFields(easyHander, "", 0);
         handle->context->options.ReplaceBody("", 0);
+        ApplyBodyToCurlHandle(easyHander, handle->context);
     }
     INTERCEPTOR_TRACE_END("CONNECT_NETWORK", "CONTINUE");
     handle->after();
