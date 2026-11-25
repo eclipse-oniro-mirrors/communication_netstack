@@ -147,28 +147,42 @@ struct LocalSocketServerManager {
         (void)epoll_ctl(epollFd_, EPOLL_CTL_DEL, sockfd, nullptr);
     }
 #endif
-    void RemoveAllAccept()
+    int TakeAndDetachAccept(int clientId)
     {
         std::lock_guard<std::mutex> lock(clientMutex_);
-        for (const auto &[id, fd] : acceptFds_) {
-            if (fd > 0) {
+        if (auto ite = acceptFds_.find(clientId); ite != acceptFds_.end()) {
+            int fd = ite->second;
+            acceptFds_.erase(ite);
+#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
+            UnregisterEpollEvent(fd);
+#endif
+            return fd;
+        }
+        return -1;
+    }
+    void RemoveAllAccept()
+    {
+        std::map<int, int> fds;
+        {
+            std::lock_guard<std::mutex> lock(clientMutex_);
+            fds.swap(acceptFds_);
+        }
+        for (const auto &[id, fd] : fds) {
+            if (fd >= 0) {
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
                 UnregisterEpollEvent(fd);
 #endif
                 close(fd);
             }
         }
-        acceptFds_.clear();
     }
+    // Unified teardown: the epoll detach lives inside TakeAndDetachAccept, leaving only
+    // the close to do here.
     void RemoveAccept(int clientId)
     {
-        std::lock_guard<std::mutex> lock(clientMutex_);
-        if (auto ite = acceptFds_.find(clientId); ite != acceptFds_.end()) {
-#if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
-            UnregisterEpollEvent(ite->second);
-#endif
-            close(ite->second);
-            acceptFds_.erase(ite);
+        int fd = TakeAndDetachAccept(clientId);
+        if (fd >= 0) {
+            close(fd);
         }
     }
     int GetAcceptFd(int clientId)
