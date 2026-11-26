@@ -244,10 +244,13 @@ void FinalizeLocalsocketServer(napi_env, void *data, void *)
             if (fd >= 0 && manager->SetSocketFdIfEqual(fd)) {
                 close(fd);
             }
+            // 只有listen成功，线程起来后才WaitingForEndingLoop，避免无事件产生卡死线程
+            if (serverMgr->loopStarted_) {
+                serverMgr->WaitForEndingLoop();
+            }
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
             close(serverMgr->epollFd_);
 #endif
-            serverMgr->WaitForEndingLoop();
             if (serverMgr->stopEventFd_ >= 0) {
                 close(serverMgr->stopEventFd_);
                 serverMgr->stopEventFd_ = -1;
