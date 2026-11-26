@@ -44,10 +44,11 @@ struct LocalSocketServerManager {
 #endif
     LocalExtraOptions extraOptions_;
     bool alreadySetExtraOptions_ = false;
-    std::atomic_bool isServerDestruct_;
+    std::atomic_bool isServerDestruct_{false};
     bool isLoopFinished_ = false;
     int epollFd_ = -1;
     int stopEventFd_ = -1;
+    std::atomic_bool loopStarted_{false};
 #if !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     epoll_event events_[MAX_EVENTS] = {};
 #endif
