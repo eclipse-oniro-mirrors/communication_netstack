@@ -14,6 +14,7 @@
  */
 
 #include "gtest/gtest.h"
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <memory>
@@ -241,7 +242,7 @@ HWTEST_F(HttpInterceptorTest, ApplyBodyToCurlHandleCopiesExternalBufferTest001, 
 
     const size_t len = 64;
     char *external = new char[len];
-    std::memset(external, 'A', len);
+    std::fill_n(external, len, 'A');
     context.options.ReplaceBody(external, len);
     HttpInterceptor::ApplyBodyToCurlHandle(handle, &context);
     // 模拟 JS 侧 ArrayBuffer 底层内存被回收
