@@ -1232,6 +1232,7 @@ bool ExecLocalSocketServerListen(LocalSocketServerListenContext *context)
     std::thread serviceThread(LocalSocketServerAccept, context->GetSharedManager(), mgr,
                               LocalSocketMessageCallback(context->GetSharedManager(), context->GetSocketPath()));
 #endif
+    mgr->loopStarted_.store(true);
     serviceThread.detach();
     return true;
     // LCOV_EXCL_STOP
