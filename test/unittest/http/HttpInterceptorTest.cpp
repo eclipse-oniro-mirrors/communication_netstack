@@ -14,8 +14,10 @@
  */
 
 #include "gtest/gtest.h"
+#include <algorithm>
 #include <cstring>
 #include <iostream>
+#include <memory>
 #ifdef GTEST_API_
 #define private public
 #endif
@@ -209,5 +211,102 @@ HWTEST_F(HttpInterceptorTest, DestructorTest001, TestSize.Level1)
     }
 
     SUCCEED();
+}
+HWTEST_F(HttpInterceptorTest, ApplyBodyToCurlHandleSurvivesLocalStringTest001, TestSize.Level1)
+{
+    auto manager = std::make_shared<OHOS::NetStack::EventManager>();
+    RequestContext context(nullptr, manager);
+    CURL *handle = curl_easy_init();
+    ASSERT_NE(handle, nullptr);
+
+    const char *storedAddr = nullptr;
+    {
+        std::string bodyStr = "{\"message\":\"probe string body\"}";
+        context.options.ReplaceBody(bodyStr.data(), bodyStr.size());
+        HttpInterceptor::ApplyBodyToCurlHandle(handle, &context);
+        storedAddr = context.options.GetBody().data();
+    }
+    // 局部字符串已析构，curl 句柄指向的必须是 options 内部长期存储
+    EXPECT_EQ(context.options.GetBody(), "{\"message\":\"probe string body\"}");
+    EXPECT_EQ(context.options.GetBody().size(), static_cast<size_t>(31));
+    EXPECT_EQ(storedAddr, context.options.GetBody().data());
+    curl_easy_cleanup(handle);
+}
+
+HWTEST_F(HttpInterceptorTest, ApplyBodyToCurlHandleCopiesExternalBufferTest001, TestSize.Level1)
+{
+    auto manager = std::make_shared<OHOS::NetStack::EventManager>();
+    RequestContext context(nullptr, manager);
+    CURL *handle = curl_easy_init();
+    ASSERT_NE(handle, nullptr);
+
+    const size_t len = 64;
+    char *external = new char[len];
+    std::fill_n(external, len, 'A');
+    context.options.ReplaceBody(external, len);
+    HttpInterceptor::ApplyBodyToCurlHandle(handle, &context);
+    // 模拟 JS 侧 ArrayBuffer 底层内存被回收
+    delete[] external;
+
+    EXPECT_EQ(context.options.GetBody().size(), len);
+    EXPECT_EQ(context.options.GetBody(), std::string(len, 'A'));
+    curl_easy_cleanup(handle);
+}
+
+HWTEST_F(HttpInterceptorTest, ApplyBodyToCurlHandleBinaryBodyTest001, TestSize.Level1)
+{
+    auto manager = std::make_shared<OHOS::NetStack::EventManager>();
+    RequestContext context(nullptr, manager);
+    CURL *handle = curl_easy_init();
+    ASSERT_NE(handle, nullptr);
+
+    const char binary[] = {'B', '\0', static_cast<char>(0xFF), 'C', '\x01', '\0', 'D'};
+    context.options.ReplaceBody(binary, sizeof(binary));
+    HttpInterceptor::ApplyBodyToCurlHandle(handle, &context);
+
+    const std::string &stored = context.options.GetBody();
+    ASSERT_EQ(stored.size(), sizeof(binary));
+    EXPECT_EQ(std::memcmp(stored.data(), binary, sizeof(binary)), 0);
+    curl_easy_cleanup(handle);
+}
+
+HWTEST_F(HttpInterceptorTest, ApplyBodyToCurlHandleEmptyBodyTest001, TestSize.Level1)
+{
+    auto manager = std::make_shared<OHOS::NetStack::EventManager>();
+    RequestContext context(nullptr, manager);
+    CURL *handle = curl_easy_init();
+    ASSERT_NE(handle, nullptr);
+
+    context.options.ReplaceBody("", 0);
+    HttpInterceptor::ApplyBodyToCurlHandle(handle, &context);
+
+    EXPECT_TRUE(context.options.GetBody().empty());
+    EXPECT_EQ(context.options.GetBody().size(), static_cast<size_t>(0));
+    curl_easy_cleanup(handle);
+}
+
+HWTEST_F(HttpInterceptorTest, ApplyBodyToCurlHandleNullArgumentsTest001, TestSize.Level1)
+{
+    auto manager = std::make_shared<OHOS::NetStack::EventManager>();
+    RequestContext context(nullptr, manager);
+    CURL *handle = curl_easy_init();
+    ASSERT_NE(handle, nullptr);
+
+    // 空句柄与空上下文都必须直接返回，不访问内部状态
+    HttpInterceptor::ApplyBodyToCurlHandle(nullptr, &context);
+    HttpInterceptor::ApplyBodyToCurlHandle(handle, nullptr);
+    HttpInterceptor::ApplyBodyToCurlHandle(nullptr, nullptr);
+
+    EXPECT_TRUE(context.options.GetBody().empty());
+    curl_easy_cleanup(handle);
+}
+
+HWTEST_F(HttpInterceptorTest, BuildHeaderLineTest001, TestSize.Level1)
+{
+    // 空值用分号拼接，curl 才会发出空值头；冒号加空格会被 curl 当成删除该头
+    EXPECT_EQ(HttpInterceptor::BuildHeaderLine("X-Empty", ""), "X-Empty;");
+    EXPECT_EQ(HttpInterceptor::BuildHeaderLine("content-type", "application/json"),
+        "content-type: application/json");
+    EXPECT_EQ(HttpInterceptor::BuildHeaderLine("X-Number", "0"), "X-Number: 0");
 }
 } // namespace
